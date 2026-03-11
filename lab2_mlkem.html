@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lab 2 — ML-KEM Key Encapsulation · PQC Series</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg: #080c10;
+  --surface: #0d1117;
+  --surface2: #161b22;
+  --surface3: #1c2330;
+  --border: #21282f;
+  --border2: #30363d;
+  --accent: #58a6ff;
+  --accent-dim: rgba(88,166,255,0.12);
+  --green: #3fb950;
+  --green-dim: rgba(63,185,80,0.1);
+  --orange: #e3b341;
+  --orange-dim: rgba(227,179,65,0.1);
+  --red: #f85149;
+  --red-dim: rgba(248,81,73,0.1);
+  --purple: #bc8cff;
+  --purple-dim: rgba(188,140,255,0.1);
+  --teal: #39d0d8;
+  --teal-dim: rgba(57,208,216,0.1);
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --text-dim: #484f58;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --radius: 8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.7;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:1000;}
+/* ─── PROGRESS ─── */
+.progress-track{position:fixed;top:0;left:0;right:0;height:3px;background:var(--border);z-index:200;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--purple));transition:width 0.5s ease;width:0%;}
+/* ─── NAV ─── */
+.top-nav{position:sticky;top:0;background:rgba(8,12,16,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);z-index:100;padding:0 24px;}
+.nav-inner{max-width:960px;margin:0 auto;display:flex;align-items:center;overflow-x:auto;scrollbar-width:none;}
+.nav-inner::-webkit-scrollbar{display:none;}
+.nav-tab{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-dim);padding:14px 16px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all 0.2s;background:none;border-top:none;border-left:none;border-right:none;display:flex;align-items:center;gap:6px;}
+.nav-tab:hover{color:var(--text-muted);}
+.nav-tab.active{color:var(--teal);border-bottom-color:var(--teal);}
+.nav-dot{width:6px;height:6px;border-radius:50%;background:var(--text-dim);transition:background 0.2s;}
+.nav-tab.done .nav-dot{background:var(--green);}
+.nav-tab.active .nav-dot{background:var(--teal);}
+/* ─── SECTIONS ─── */
+.section-wrap{display:none;animation:fadeIn 0.3s ease;}
+.section-wrap.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.container{max-width:960px;margin:0 auto;padding:0 24px 80px;}
+/* ─── TYPE ─── */
+h1{font-size:clamp(20px,2.5vw,28px);font-weight:700;line-height:1.25;}
+h2{font-size:18px;font-weight:700;margin-bottom:14px;}
+h3{font-size:15px;font-weight:600;color:var(--teal);margin:24px 0 8px;}
+p{color:var(--text-muted);margin-bottom:12px;}
+p:last-child{margin-bottom:0;}
+strong{color:var(--text);font-weight:600;}
+.section-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--teal);margin-bottom:8px;}
+.section-header{padding:48px 0 36px;border-bottom:1px solid var(--border);margin-bottom:36px;}
+/* ─── CARDS ─── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:16px;}
+/* ─── CALLOUTS ─── */
+.callout{border-radius:var(--radius);padding:14px 18px;margin:18px 0;border-left:3px solid;font-size:13.5px;line-height:1.6;}
+.callout-title{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;display:block;margin-bottom:6px;}
+.callout.info{background:var(--teal-dim);border-color:var(--teal);}
+.callout.info .callout-title{color:var(--teal);}
+.callout.accent{background:var(--accent-dim);border-color:var(--accent);}
+.callout.accent .callout-title{color:var(--accent);}
+.callout.warn{background:var(--orange-dim);border-color:var(--orange);}
+.callout.warn .callout-title{color:var(--orange);}
+.callout.danger{background:var(--red-dim);border-color:var(--red);}
+.callout.danger .callout-title{color:var(--red);}
+.callout.success{background:var(--green-dim);border-color:var(--green);}
+.callout.success .callout-title{color:var(--green);}
+.callout.purple{background:var(--purple-dim);border-color:var(--purple);}
+.callout.purple .callout-title{color:var(--purple);}
+/* ─── BADGES ─── */
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:3px 9px;border-radius:20px;border:1px solid;}
+.badge-teal{background:var(--teal-dim);color:var(--teal);border-color:rgba(57,208,216,0.3);}
+.badge-blue{background:var(--accent-dim);color:var(--accent);border-color:rgba(88,166,255,0.3);}
+.badge-green{background:var(--green-dim);color:var(--green);border-color:rgba(63,185,80,0.3);}
+.badge-orange{background:var(--orange-dim);color:var(--orange);border-color:rgba(227,179,65,0.3);}
+.badge-red{background:var(--red-dim);color:var(--red);border-color:rgba(248,81,73,0.3);}
+.badge-purple{background:var(--purple-dim);color:var(--purple);border-color:rgba(188,140,255,0.3);}
+/* ─── BUTTONS ─── */
+.btn{font-family:var(--sans);font-size:13px;font-weight:600;padding:10px 22px;border-radius:6px;cursor:pointer;transition:all 0.18s;border:1px solid;display:inline-flex;align-items:center;gap:7px;}
+.btn-primary{background:var(--teal);color:#08090c;border-color:var(--teal);}
+.btn-primary:hover{background:#5be0e8;border-color:#5be0e8;}
+.btn-ghost{background:transparent;color:var(--text-muted);border-color:var(--border2);}
+.btn-ghost:hover{background:var(--surface2);color:var(--text);}
+.btn-green{background:var(--green);color:#08090c;border-color:var(--green);}
+.btn-green:hover{background:#56d364;}
+.btn-red{background:var(--red);color:white;border-color:var(--red);}
+.btn-sm{font-size:12px;padding:7px 16px;}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+/* ─── TERMINAL ─── */
+.terminal{background:#05080b;border:1px solid #1e2d3d;border-radius:10px;overflow:hidden;margin:20px 0;box-shadow:0 0 40px rgba(57,208,216,0.04);}
+.term-bar{background:#0d1520;border-bottom:1px solid #1e2d3d;padding:10px 16px;display:flex;align-items:center;gap:10px;}
+.term-dots{display:flex;gap:6px;}
+.dot{width:10px;height:10px;border-radius:50%;}
+.dot-r{background:#f85149;}.dot-y{background:#e3b341;}.dot-g{background:#3fb950;}
+.term-title{font-family:var(--mono);font-size:11px;color:var(--text-dim);flex:1;text-align:center;}
+.term-body{padding:22px 28px;font-family:var(--mono);font-size:12.5px;line-height:1.85;color:#adbac7;}
+.term-body .p{color:var(--teal);}
+.term-body .cmd{color:var(--text);}
+.term-body .out{color:var(--text-muted);}
+.term-body .ok{color:var(--green);}
+.term-body .err{color:var(--red);font-weight:600;}
+.term-body .warn{color:var(--orange);}
+.term-body .cmt{color:var(--text-dim);font-style:italic;}
+.term-body .blank{height:6px;}
+.term-body .hi{color:var(--teal);}
+.term-body .num{color:var(--purple);}
+/* ─── MC QUIZ ─── */
+.quiz-block{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin:20px 0;}
+.q-text{font-size:16px;font-weight:600;color:var(--text);line-height:1.5;margin-bottom:20px;}
+.mc-options{display:flex;flex-direction:column;gap:10px;}
+.mc-option{display:flex;align-items:center;gap:14px;padding:13px 16px;border:1px solid var(--border2);border-radius:8px;cursor:pointer;transition:all 0.18s;background:var(--surface2);}
+.mc-option:hover{border-color:var(--teal);background:var(--teal-dim);}
+.mc-option.selected{border-color:var(--teal);background:var(--teal-dim);}
+.mc-option.correct{border-color:var(--green);background:var(--green-dim);pointer-events:none;}
+.mc-option.incorrect{border-color:var(--red);background:var(--red-dim);pointer-events:none;}
+.mc-letter{font-family:var(--mono);font-size:12px;font-weight:700;width:24px;height:24px;border-radius:4px;background:var(--surface);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text-muted);}
+.mc-option.correct .mc-letter{background:var(--green);border-color:var(--green);color:#08090c;}
+.mc-option.incorrect .mc-letter{background:var(--red);border-color:var(--red);color:white;}
+.mc-text{font-size:14px;color:var(--text);}
+.answer-reveal{display:none;margin-top:16px;padding:14px 16px;border-radius:8px;font-size:13.5px;line-height:1.6;border-left:3px solid;animation:fadeIn 0.3s ease;}
+.answer-reveal.show{display:block;}
+.answer-reveal.correct-reveal{background:var(--green-dim);border-color:var(--green);}
+.answer-reveal.incorrect-reveal{background:rgba(248,81,73,0.08);border-color:var(--red);}
+.reveal-label{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;display:block;margin-bottom:6px;}
+.correct-reveal .reveal-label{color:var(--green);}
+.incorrect-reveal .reveal-label{color:var(--red);}
+/* ─── ALICE/BOB EXCHANGE ─── */
+.exchange-stage{margin:24px 0;}
+.actors{display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:start;margin:20px 0;}
+.actor-panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;}
+.actor-name{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.actor-alice .actor-name{color:var(--teal);}
+.actor-bob .actor-name{color:var(--purple);}
+.actor-channel{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:0 14px;min-width:100px;}
+.channel-line{width:2px;flex:1;min-height:60px;background:linear-gradient(180deg,var(--teal),var(--purple));margin:0 auto;opacity:0.3;transition:opacity 0.5s;}
+.channel-line.active{opacity:1;}
+.channel-label{font-family:var(--mono);font-size:10px;color:var(--text-dim);text-align:center;white-space:nowrap;margin:8px 0;}
+.key-display{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;font-family:var(--mono);font-size:11px;line-height:1.5;margin:8px 0;word-break:break-all;min-height:44px;transition:all 0.4s ease;}
+.key-display.has-value{border-color:var(--teal);background:rgba(57,208,216,0.05);}
+.key-display.secret-match{border-color:var(--green);background:var(--green-dim);color:var(--green);}
+.key-display.secret-mismatch{border-color:var(--red);background:var(--red-dim);color:var(--red);}
+.key-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:4px;}
+.step-indicator{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;}
+.step-pip{width:32px;height:5px;border-radius:3px;background:var(--border2);transition:background 0.3s;}
+.step-pip.done{background:var(--green);}
+.step-pip.current{background:var(--teal);}
+.step-pip.pending{background:var(--border2);}
+.exchange-log{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px 18px;font-family:var(--mono);font-size:12px;line-height:1.7;margin:16px 0;min-height:80px;}
+.log-line{color:var(--text-muted);animation:fadeIn 0.3s ease;}
+.log-line.log-alice{color:var(--teal);}
+.log-line.log-bob{color:var(--purple);}
+.log-line.log-success{color:var(--green);font-weight:700;}
+.log-line.log-warn{color:var(--orange);}
+.log-line.log-sys{color:var(--text-dim);}
+/* ─── RECORD TABLE ─── */
+.record-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px;}
+.record-table th{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;}
+.record-table td{padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--text-muted);transition:all 0.3s;}
+.record-table td.filled{color:var(--teal);}
+.record-table tr.row-rsa td{background:rgba(248,81,73,0.03);}
+.record-table tr.row-ecdh td{background:rgba(227,179,65,0.03);}
+.record-table tr.row-512 td{background:rgba(57,208,216,0.03);}
+.record-table tr.row-768 td{background:rgba(57,208,216,0.06);}
+.record-table tr.row-1024 td{background:rgba(57,208,216,0.09);}
+/* ─── BENCHMARK BARS ─── */
+.bench-section{margin:28px 0;}
+.bench-row{margin-bottom:16px;}
+.bench-label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:6px;}
+.bench-label .blabel{font-weight:700;}
+.bench-track{height:28px;background:var(--surface2);border-radius:6px;overflow:hidden;border:1px solid var(--border);position:relative;}
+.bench-fill{height:100%;border-radius:6px;display:flex;align-items:center;padding:0 10px;font-family:var(--mono);font-size:11px;font-weight:700;white-space:nowrap;transition:width 1.2s cubic-bezier(0.16,1,0.3,1);width:0%;}
+.bench-fill.bf-rsa{background:rgba(248,81,73,0.3);color:var(--red);}
+.bench-fill.bf-ecdh{background:rgba(227,179,65,0.3);color:var(--orange);}
+.bench-fill.bf-512{background:rgba(57,208,216,0.2);color:var(--teal);}
+.bench-fill.bf-768{background:rgba(57,208,216,0.3);color:var(--teal);}
+.bench-fill.bf-1024{background:rgba(57,208,216,0.4);color:var(--teal);}
+/* ─── BREAK IT ─── */
+.break-box{background:linear-gradient(135deg,rgba(248,81,73,0.06),rgba(188,140,255,0.04));border:1px solid rgba(248,81,73,0.25);border-radius:12px;padding:28px;margin:24px 0;}
+.break-title{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--red);margin-bottom:8px;}
+.bit-slider-wrap{margin:20px 0;}
+.bit-slider-label{font-size:13px;color:var(--text-muted);margin-bottom:8px;}
+.bit-slider-label span{font-family:var(--mono);font-weight:700;color:var(--orange);}
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:var(--surface2);border:1px solid var(--border2);outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--orange);cursor:pointer;border:2px solid var(--bg);}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--orange);cursor:pointer;border:2px solid var(--bg);}
+.flip-result{margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;display:none;}
+.flip-result.show{display:block;animation:fadeIn 0.3s ease;}
+.secret-compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0;}
+.secret-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;font-family:var(--mono);font-size:11px;word-break:break-all;line-height:1.6;}
+.secret-box.alice-box{border-top:3px solid var(--teal);}
+.secret-box.bob-box{border-top:3px solid var(--purple);}
+.secret-box.mismatch{border-color:var(--red);background:var(--red-dim);}
+.secret-box .sb-label{font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;}
+.alice-box .sb-label{color:var(--teal);}
+.bob-box .sb-label{color:var(--purple);}
+.secret-box.mismatch .sb-label{color:var(--red);}
+/* ─── SECURITY LEVEL SELECTOR ─── */
+.level-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0;}
+.level-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;cursor:pointer;transition:all 0.2s;text-align:center;}
+.level-card:hover{border-color:var(--teal);transform:translateY(-2px);}
+.level-card.selected{border-color:var(--teal);background:rgba(57,208,216,0.07);box-shadow:0 0 20px rgba(57,208,216,0.08);}
+.level-card.lc-512.selected{border-color:var(--accent);background:var(--accent-dim);}
+.level-card.lc-1024.selected{border-color:var(--purple);background:var(--purple-dim);}
+.lc-name{font-family:var(--mono);font-size:14px;font-weight:700;margin-bottom:6px;}
+.lc-512 .lc-name{color:var(--accent);}
+.lc-768 .lc-name{color:var(--teal);}
+.lc-1024 .lc-name{color:var(--purple);}
+.lc-equiv{font-size:12px;color:var(--text-muted);margin-bottom:10px;}
+.lc-bar{height:6px;border-radius:3px;margin-bottom:8px;transition:width 0.5s ease;}
+.lc-512 .lc-bar{background:var(--accent);width:60%;}
+.lc-768 .lc-bar{background:var(--teal);width:80%;}
+.lc-1024 .lc-bar{background:var(--purple);width:100%;}
+.lc-meta{font-family:var(--mono);font-size:10px;color:var(--text-dim);line-height:1.7;}
+.level-verdict{display:none;margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px;animation:fadeIn 0.3s ease;}
+.level-verdict.show{display:block;}
+/* ─── HYBRID DIAGRAM ─── */
+.hybrid-flow{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:20px 0;align-items:center;}
+.hf-node{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 8px;text-align:center;font-size:12px;}
+.hf-arrow{text-align:center;color:var(--text-dim);font-size:18px;}
+.hf-rsa{border-color:rgba(248,81,73,0.4);}
+.hf-mlkem{border-color:rgba(57,208,216,0.4);}
+.hf-combine{border-color:rgba(63,185,80,0.4);}
+/* ─── REFLECT ─── */
+.reflect-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:20px;}
+.reflect-q{font-size:15px;font-weight:600;color:var(--text);margin-bottom:14px;line-height:1.5;}
+.ref-opts{display:flex;flex-direction:column;gap:8px;}
+.ref-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1px solid var(--border2);border-radius:8px;cursor:pointer;background:var(--surface2);transition:all 0.18s;font-size:13.5px;line-height:1.5;color:var(--text-muted);}
+.ref-opt:hover{border-color:var(--teal);background:var(--teal-dim);color:var(--text);}
+.ref-opt.correct{border-color:var(--green);background:var(--green-dim);pointer-events:none;color:var(--text);}
+.ref-opt.incorrect{border-color:var(--red);background:var(--red-dim);pointer-events:none;}
+.ref-letter{font-family:var(--mono);font-size:12px;font-weight:700;width:22px;height:22px;border-radius:4px;background:var(--surface);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text-dim);margin-top:1px;}
+.ref-opt.correct .ref-letter{background:var(--green);border-color:var(--green);color:#08090c;}
+.ref-opt.incorrect .ref-letter{background:var(--red);border-color:var(--red);color:white;}
+/* ─── COMPLETION ─── */
+.completion-banner{background:linear-gradient(135deg,rgba(57,208,216,0.07),rgba(188,140,255,0.05));border:1px solid rgba(57,208,216,0.25);border-radius:12px;padding:36px;text-align:center;margin:32px 0;display:none;}
+.completion-banner.show{display:block;animation:fadeIn 0.4s ease;}
+.completion-banner h2{font-size:22px;color:var(--teal);margin-bottom:10px;}
+.future-hook{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:16px 20px;font-style:italic;font-size:15px;color:var(--teal);max-width:600px;margin:16px auto 20px;line-height:1.6;}
+/* ─── FOOTER NAV ─── */
+.section-footer{display:flex;justify-content:space-between;align-items:center;margin-top:44px;padding-top:20px;border-top:1px solid var(--border);gap:12px;}
+.divider{border:none;border-top:1px solid var(--border);margin:28px 0;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.cursor{display:inline-block;animation:blink 1s step-end infinite;color:var(--teal);}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border2);border-top-color:var(--teal);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
+/* ─── CONCEPT TABS ─── */
+.concept-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:28px;overflow-x:auto;scrollbar-width:none;}
+.concept-tab{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-dim);padding:11px 18px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all 0.2s;background:none;border-top:none;border-left:none;border-right:none;}
+.concept-tab:hover{color:var(--text-muted);}
+.concept-tab.active{color:var(--teal);border-bottom-color:var(--teal);}
+.concept-panel{display:none;}
+.concept-panel.active{display:block;animation:fadeIn 0.25s ease;}
+/* ─── RESPONSIVE ─── */
+@media(max-width:680px){
+  .actors{grid-template-columns:1fr;}.actor-channel{display:none;}
+  .level-cards{grid-template-columns:1fr;}
+  .hybrid-flow{grid-template-columns:1fr;}.hf-arrow{transform:rotate(90deg);}
+  .secret-compare{grid-template-columns:1fr;}
+  .container{padding:0 16px 60px;}
+}
+</style>
+</head>
+<body>
+
+<div class="progress-track"><div class="progress-fill" id="progressBar"></div></div>
+
+<nav class="top-nav">
+  <div class="nav-inner">
+    <button class="nav-tab active" onclick="showSection(0)" id="tab0"><span class="nav-dot"></span> Mission Brief</button>
+    <button class="nav-tab" onclick="showSection(1)" id="tab1"><span class="nav-dot"></span> Concept</button>
+    <button class="nav-tab" onclick="showSection(2)" id="tab2"><span class="nav-dot"></span> Key Exchange</button>
+    <button class="nav-tab" onclick="showSection(3)" id="tab3"><span class="nav-dot"></span> Benchmark</button>
+    <button class="nav-tab" onclick="showSection(4)" id="tab4"><span class="nav-dot"></span> Break It</button>
+    <button class="nav-tab" onclick="showSection(5)" id="tab5"><span class="nav-dot"></span> Reflection</button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 0 — MISSION BRIEF
+══════════════════════════════════════════════════ -->
+<div class="section-wrap active" id="section0">
+<div class="container">
+
+  <div class="section-header">
+    <div class="section-eyebrow">Lab 2 of 5 · Post-Quantum Cryptography</div>
+    <h1>ML-KEM: The Post-Quantum Key Exchange</h1>
+    <p style="font-size:15px;max-width:640px;margin-top:10px;">Alice and Bob need a shared secret. Diffie-Hellman and ECDH are broken. In this lab you implement the replacement, measure what it costs, and then attack it.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;">
+      <span class="badge badge-teal">⏱ 90 Min</span>
+      <span class="badge badge-blue">🐍 Python + OQS</span>
+      <span class="badge badge-purple">📊 Benchmarking</span>
+      <span class="badge badge-orange">💥 Break It</span>
+    </div>
+  </div>
+
+  <!-- Setup terminal -->
+  <div class="terminal">
+    <div class="term-bar"><div class="term-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div><span class="term-title">lab-setup.sh — environment check</span></div>
+    <div class="term-body">
+      <div><span class="p">$ </span><span class="cmd">pip install liboqs-python</span></div>
+      <div class="ok">Successfully installed liboqs-python-0.11.0</div>
+      <div class="blank"></div>
+      <div><span class="p">$ </span><span class="cmd">python -c "import oqs; print(oqs.get_enabled_KEM_mechanisms())"</span></div>
+      <div class="out">['ML-KEM-512', 'ML-KEM-768', 'ML-KEM-1024', 'Kyber512', 'Kyber768', ...]</div>
+      <div class="blank"></div>
+      <div class="ok">[ OK ] OQS library loaded. ML-KEM variants available.</div>
+      <div class="ok">[ OK ] NIST FIPS 203 compliant. Ready for lab.</div>
+      <div class="blank"></div>
+      <div><span class="p">$ </span><span class="cmd">python lab2.py</span><span class="cursor">_</span></div>
+    </div>
+  </div>
+
+  <!-- Scenario cards -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:24px 0;">
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:6px;">Broken Algorithm</div>
+      <div style="font-size:18px;font-weight:700;color:var(--red);">ECDH P-256</div>
+      <div style="font-size:12px;color:var(--text-muted);">Shor's solves discrete log in polynomial time</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:6px;">Replacement</div>
+      <div style="font-size:18px;font-weight:700;color:var(--teal);">ML-KEM-768</div>
+      <div style="font-size:12px;color:var(--text-muted);">NIST FIPS 203. Lattice-based. Quantum-safe.</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:6px;">Hard Problem</div>
+      <div style="font-size:18px;font-weight:700;color:var(--purple);">LWE</div>
+      <div style="font-size:12px;color:var(--text-muted);">Learning With Errors — no quantum speedup known</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:6px;">NIST Standard</div>
+      <div style="font-size:18px;font-weight:700;color:var(--accent);">Aug 2024</div>
+      <div style="font-size:12px;color:var(--text-muted);">FIPS 203 published. Deploy now.</div>
+    </div>
+  </div>
+
+  <!-- Objectives -->
+  <div class="card">
+    <h2 style="margin-bottom:18px;">Lab Objectives</h2>
+    <div style="display:flex;flex-direction:column;gap:0;">
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);">
+        <div style="width:28px;height:28px;border-radius:6px;background:var(--teal-dim);color:var(--teal);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:2px;">🧠</div>
+        <div><div style="font-weight:600;font-size:14px;color:var(--text);">Understand LWE</div><div style="font-size:13px;color:var(--text-muted);">Learn the intuition behind Learning With Errors — why noisy linear algebra defeats both classical and quantum adversaries.</div></div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);">
+        <div style="width:28px;height:28px;border-radius:6px;background:var(--accent-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:2px;">🔑</div>
+        <div><div style="font-weight:600;font-size:14px;color:var(--text);">Implement ML-KEM Key Exchange</div><div style="font-size:13px;color:var(--text-muted);">Run generate_keypair → encap_secret → decap_secret. Confirm both parties derive identical shared secrets.</div></div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);">
+        <div style="width:28px;height:28px;border-radius:6px;background:var(--purple-dim);color:var(--purple);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:2px;">📊</div>
+        <div><div style="font-weight:600;font-size:14px;color:var(--text);">Benchmark All Three Security Levels</div><div style="font-size:13px;color:var(--text-muted);">Compare ML-KEM-512/768/1024 against RSA-2048 and ECDH P-256 across key size, ciphertext size, and operation time.</div></div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;">
+        <div style="width:28px;height:28px;border-radius:6px;background:var(--red-dim);color:var(--red);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:2px;">💥</div>
+        <div><div style="font-weight:600;font-size:14px;color:var(--text);">Break It: Bit Flip Attack</div><div style="font-size:13px;color:var(--text-muted);">Corrupt a single bit in the ciphertext before decapsulation. Observe whether ML-KEM fails loudly or silently — the answer has protocol design implications.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout info" style="margin-top:20px;">
+    <span class="callout-title">🔗 Prerequisite</span>
+    This lab builds directly on Module 1. You should be able to explain why Shor's algorithm breaks ECDH before implementing its replacement. If not, complete Lab 1 first.
+  </div>
+
+  <div class="section-footer">
+    <span style="font-size:12px;color:var(--text-dim);font-family:var(--mono);">SECTION 1 OF 6</span>
+    <button class="btn btn-primary" onclick="showSection(1)">Begin: Understand LWE →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 1 — CONCEPT
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section1">
+<div class="container">
+
+  <div class="section-header">
+    <div class="section-eyebrow">Concept · Learning With Errors + ML-KEM Overview</div>
+    <h1>Why Lattice Problems Are Quantum-Hard</h1>
+    <p style="font-size:14px;max-width:580px;margin-top:10px;color:var(--text-muted);">The intuition in 5 sentences. Then we visualize it. Then a micro-check before you implement.</p>
+  </div>
+
+  <div class="concept-tabs">
+    <button class="concept-tab active" onclick="showCP('cp-lwe',this)">LWE Intuition</button>
+    <button class="concept-tab" onclick="showCP('cp-visual',this)">Visual Demo</button>
+    <button class="concept-tab" onclick="showCP('cp-kem',this)">KEM vs KEX</button>
+    <button class="concept-tab" onclick="showCP('cp-levels',this)">Security Levels</button>
+  </div>
+
+  <!-- LWE Intuition -->
+  <div class="concept-panel active" id="cp-lwe">
+    <div class="callout info">
+      <span class="callout-title">💡 The Core Idea — Learning With Errors</span>
+      Imagine a system of linear equations: <strong>A · s = b</strong>. If you know A and b, you can solve for the secret vector s using standard linear algebra. Now add small random noise to each equation: <strong>A · s + e ≈ b</strong>. Recovering s from the noisy equations is computationally hard — even with a quantum computer. The noise is the security. Shor's algorithm exploits the <em>periodicity</em> of modular arithmetic in RSA and ECC — but noisy linear algebra has no such exploitable structure. There is no known quantum algorithm that solves LWE significantly faster than the best classical algorithm.
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0;">
+      <div class="card">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--red);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">Classical Problem (Solvable)</div>
+        <div style="font-family:var(--mono);font-size:12px;line-height:2;color:var(--text-muted);">
+          3s₁ + 2s₂ + s₃ = 14<br>
+          s₁ + 4s₂ + 2s₃ = 19<br>
+          2s₁ + s₂ + 3s₃ = 15<br>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:var(--text-muted);">Gaussian elimination → <span style="color:var(--red);">s = [1, 2, 3]</span>. Trivially solvable. <strong>Not secure.</strong></div>
+      </div>
+      <div class="card" style="border-color:rgba(57,208,216,0.3);">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--teal);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">LWE Problem (Quantum-Hard)</div>
+        <div style="font-family:var(--mono);font-size:12px;line-height:2;color:var(--text-muted);">
+          3s₁ + 2s₂ + s₃ + <span style="color:var(--orange);">1</span> = 15<br>
+          s₁ + 4s₂ + 2s₃ + <span style="color:var(--orange);">-2</span> = 17<br>
+          2s₁ + s₂ + 3s₃ + <span style="color:var(--orange);">1</span> = 16<br>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:var(--text-muted);">Small noise <span style="color:var(--orange);">e</span> added. <span style="color:var(--teal);">Recovering s is computationally hard.</span> Even quantum Fourier transforms can't exploit the structure because there is no periodic structure to exploit.</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px;">
+      <div class="callout warn">
+        <span class="callout-title">❓ Why Not Just Remove the Noise?</span>
+        Because the noise is random and unknown to the attacker. Without knowing which noise value was added to each equation, there is no way to cleanly separate signal from error. This is the LWE hardness assumption — and it has resisted 30 years of cryptanalysis.
+      </div>
+      <div class="callout success">
+        <span class="callout-title">✅ How ML-KEM Uses LWE</span>
+        ML-KEM (CRYSTALS-Kyber) encodes its public key as a noisy LWE instance. Encapsulation creates ciphertext that can only be "decoded" correctly by the private key holder who knows the secret s. Anyone else only sees noise.
+      </div>
+    </div>
+  </div>
+
+  <!-- Visual Demo -->
+  <div class="concept-panel" id="cp-visual">
+    <p style="margin-bottom:20px;">The visualization below lets you add noise to a simple system of equations and watch how quickly the solution becomes unrecoverable. This is LWE in its simplest form.</p>
+
+    <div class="card" style="background:#05080b;border-color:#1e2d3d;">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:16px;">Interactive LWE Demo — 3×3 System</div>
+
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center;margin-bottom:20px;">
+        <div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);text-transform:uppercase;margin-bottom:8px;">Secret (s) — Hidden</div>
+          <div id="vis-secret" style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--purple);background:var(--surface2);padding:10px 14px;border-radius:6px;border:1px solid var(--border);">[2, 5, 3]</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:6px;">Attacker does not know this</div>
+        </div>
+        <div style="text-align:center;font-size:24px;color:var(--text-dim);">→</div>
+        <div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);text-transform:uppercase;margin-bottom:8px;">Recovered Guess</div>
+          <div id="vis-guess" style="font-family:var(--mono);font-size:15px;font-weight:700;color:var(--green);background:var(--surface2);padding:10px 14px;border-radius:6px;border:1px solid var(--border);">[2, 5, 3]</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:6px;">What the attacker can recover</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px;">
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">Noise level (σ): <span id="vis-noise-val" style="font-family:var(--mono);color:var(--orange);font-weight:700;">0</span></div>
+        <input type="range" min="0" max="50" value="0" id="vis-noise" oninput="updateLWEVis()" style="margin-bottom:4px;" />
+        <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--text-dim);"><span>σ=0 (solvable)</span><span>σ=10 (hard)</span><span>σ=50 (quantum-hard)</span></div>
+      </div>
+
+      <div id="vis-equations" style="font-family:var(--mono);font-size:12px;line-height:2;color:var(--text-muted);background:var(--surface2);border-radius:6px;padding:14px;border:1px solid var(--border);margin-bottom:14px;"></div>
+
+      <div id="vis-status" style="font-size:13px;color:var(--text-muted);font-style:italic;text-align:center;"></div>
+    </div>
+
+    <div class="callout accent" style="margin-top:20px;">
+      <span class="callout-title">🔭 What You're Seeing</span>
+      At σ=0 the system is perfectly solvable — this represents a classical algorithm with no security. As noise increases, the equations become inconsistent: any guess introduces accumulated errors across dimensions. ML-KEM operates at noise levels equivalent to the right end of this scale, applied across vectors of 256+ elements.
+    </div>
+  </div>
+
+  <!-- KEM vs KEX -->
+  <div class="concept-panel" id="cp-kem">
+    <p style="margin-bottom:16px;">Key Exchange (KEX) and Key Encapsulation (KEM) both produce a shared secret. They do it differently.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0;">
+      <div class="card" style="border-color:rgba(248,81,73,0.3);">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--red);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">Key Exchange — ECDH Pattern</div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.8;">
+          1. Alice generates key pair (pkₐ, skₐ)<br>
+          2. Bob generates key pair (pk_b, sk_b)<br>
+          3. Alice computes: <strong>K = sk_a × pk_b</strong><br>
+          4. Bob computes: <strong>K = sk_b × pk_a</strong><br>
+          5. Both arrive at same K<br><br>
+          <span style="color:var(--red);">Both sides contribute equally to K. Requires both to be online simultaneously. Broken by Shor's.</span>
+        </div>
+      </div>
+      <div class="card" style="border-color:rgba(57,208,216,0.4);">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--teal);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">Key Encapsulation — ML-KEM Pattern</div>
+        <div style="font-size:13px;color:var(--text-muted);line-height:1.8;">
+          1. Alice generates key pair (pk, sk)<br>
+          2. Alice publishes pk<br>
+          3. Bob runs: <strong>ct, K = Encap(pk)</strong><br>
+          4. Bob sends ciphertext ct to Alice<br>
+          5. Alice runs: <strong>K = Decap(sk, ct)</strong><br>
+          <span style="color:var(--teal);">Bob generates and wraps the secret. Alice unwraps it. Async-friendly. Quantum-safe.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <span class="callout-title">⚠ Why This Design Difference Matters</span>
+      In a KEM, the shared secret is <em>chosen</em> by the encapsulator (Bob) and transmitted wrapped inside the ciphertext. Alice's private key is the only way to unwrap it. This design is async-friendly and maps cleanly onto TLS 1.3's key_share extension. ECDH required real-time mutual computation; ML-KEM does not.
+    </div>
+  </div>
+
+  <!-- Security Levels -->
+  <div class="concept-panel" id="cp-levels">
+    <p>NIST standardized three security levels for ML-KEM, calibrated against the cost of the best known classical and quantum attacks.</p>
+
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin:16px 0;">
+      <thead>
+        <tr>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Variant</th>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">NIST Level</th>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Classical Equiv</th>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Public Key</th>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Use Case</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;"><strong style="color:var(--accent);">ML-KEM-512</strong></td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--text-muted);">1</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--text-muted);">AES-128</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--text-muted);">800 B</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--text-muted);">IoT, constrained devices</td></tr>
+        <tr><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(57,208,216,0.04);font-family:var(--mono);font-size:12px;"><strong style="color:var(--teal);">ML-KEM-768</strong></td><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(57,208,216,0.04);font-family:var(--mono);font-size:12px;color:var(--text-muted);">3</td><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(57,208,216,0.04);font-family:var(--mono);font-size:12px;color:var(--text-muted);">AES-192</td><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(57,208,216,0.04);font-family:var(--mono);font-size:12px;color:var(--text-muted);">1184 B</td><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(57,208,216,0.04);font-size:12px;color:var(--teal);font-weight:600;">General purpose — recommended</td></tr>
+        <tr><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;"><strong style="color:var(--purple);">ML-KEM-1024</strong></td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--text-muted);">5</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--text-muted);">AES-256</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--text-muted);">1568 B</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--text-muted);">Long-term archives, classified</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout accent">
+      <span class="callout-title">🎯 Which Level to Choose?</span>
+      NIST recommends <strong>ML-KEM-768</strong> for most applications. It provides security equivalent to AES-192 — well above the 128-bit threshold at which security is generally considered unbreakable for the foreseeable future. ML-KEM-1024 carries a size and performance overhead only justified for applications requiring data confidentiality beyond 30+ years.
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- MICRO-CHECK -->
+  <h2 style="margin-top:0;">Micro-Check — Before You Implement</h2>
+
+  <div class="quiz-block" id="mc1-block">
+    <div class="q-text">Why can Shor's algorithm NOT be applied to break Learning With Errors (LWE)?</div>
+    <div class="mc-options" id="mc1-opts">
+      <div class="mc-option" onclick="answerMC('mc1','A',false)"><div class="mc-letter">A</div><div class="mc-text">LWE uses 256-bit keys which are too long for Shor's algorithm to process.</div></div>
+      <div class="mc-option" onclick="answerMC('mc1','B',false)"><div class="mc-letter">B</div><div class="mc-text">Shor's algorithm requires a quantum computer, which cannot yet be built large enough.</div></div>
+      <div class="mc-option" onclick="answerMC('mc1','C',true)"><div class="mc-letter">C</div><div class="mc-text">Shor's speedup exploits the periodic algebraic structure of factoring and discrete logarithm. LWE's hardness comes from noisy linear algebra, which has no such exploitable periodicity.</div></div>
+      <div class="mc-option" onclick="answerMC('mc1','D',false)"><div class="mc-letter">D</div><div class="mc-text">Shor's algorithm only works on symmetric ciphers, not public-key problems.</div></div>
+    </div>
+    <div class="answer-reveal" id="mc1-reveal"></div>
+  </div>
+
+  <div class="quiz-block" id="mc2-block" style="display:none;">
+    <div class="q-text">In the ML-KEM encapsulation flow, who generates the shared secret?</div>
+    <div class="mc-options" id="mc2-opts">
+      <div class="mc-option" onclick="answerMC2('A',false)"><div class="mc-letter">A</div><div class="mc-text">Alice, using her private key and Bob's public key (same as ECDH).</div></div>
+      <div class="mc-option" onclick="answerMC2('B',true)"><div class="mc-letter">B</div><div class="mc-text">Bob, during encapsulation — he generates the secret and wraps it inside the ciphertext using Alice's public key. Alice recovers it via decapsulation with her private key.</div></div>
+      <div class="mc-option" onclick="answerMC2('C',false)"><div class="mc-letter">C</div><div class="mc-text">Both Alice and Bob contribute equal halves, which are then combined.</div></div>
+      <div class="mc-option" onclick="answerMC2('D',false)"><div class="mc-letter">D</div><div class="mc-text">A trusted third party generates and distributes the shared secret.</div></div>
+    </div>
+    <div class="answer-reveal" id="mc2-reveal"></div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(0)">← Mission Brief</button>
+    <button class="btn btn-primary" id="btn-to-exchange" onclick="showSection(2)" disabled>Continue to Key Exchange →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 2 — KEY EXCHANGE SIMULATOR
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section2">
+<div class="container">
+
+  <div class="section-header">
+    <div class="section-eyebrow">Exercise 1 · ML-KEM Key Exchange Implementation</div>
+    <h1>Alice and Bob Establish a Shared Secret</h1>
+    <p style="font-size:14px;max-width:580px;margin-top:10px;color:var(--text-muted);">Step through the ML-KEM protocol. Each button simulates running the corresponding Python function. Record your results in the table below.</p>
+  </div>
+
+  <!-- Code frame -->
+  <div class="terminal">
+    <div class="term-bar"><div class="term-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div><span class="term-title">lab2_exchange.py — ML-KEM-768</span></div>
+    <div class="term-body">
+      <div class="cmt"># ML-KEM Key Exchange — NIST FIPS 203</div>
+      <div class="blank"></div>
+      <div><span style="color:var(--purple);">import</span> oqs</div>
+      <div class="blank"></div>
+      <div class="cmt"># Step 1: Alice generates a keypair</div>
+      <div>kem = oqs.KeyEncapsulation(<span style="color:var(--green);">'ML-KEM-768'</span>)</div>
+      <div>public_key = kem.generate_keypair()</div>
+      <div class="blank"></div>
+      <div class="cmt"># Step 2: Bob encapsulates a secret using Alice's public key</div>
+      <div>ciphertext, shared_secret_bob = kem.encap_secret(public_key)</div>
+      <div class="blank"></div>
+      <div class="cmt"># Step 3: Alice decapsulates using her private key</div>
+      <div>shared_secret_alice = kem.decap_secret(ciphertext)</div>
+      <div class="blank"></div>
+      <div class="cmt"># Step 4: Verify both parties have the same secret</div>
+      <div><span style="color:var(--purple);">print</span>(f<span style="color:var(--green);">"Secrets match: {shared_secret_alice == shared_secret_bob}"</span>)</div>
+    </div>
+  </div>
+
+  <!-- Step indicators -->
+  <div class="step-indicator" style="margin:24px 0 16px;">
+    <div class="step-pip current" id="pip0"></div>
+    <div class="step-pip pending" id="pip1"></div>
+    <div class="step-pip pending" id="pip2"></div>
+    <div class="step-pip pending" id="pip3"></div>
+  </div>
+
+  <!-- Actor panels -->
+  <div class="actors">
+    <div class="actor-panel actor-alice">
+      <div class="actor-name">🧑 Alice <span class="badge badge-teal" style="font-size:9px;">Key Owner</span></div>
+      <div class="key-label">Public Key (pk)</div>
+      <div class="key-display" id="alice-pk">—</div>
+      <div class="key-label" style="margin-top:12px;">Shared Secret (recovered)</div>
+      <div class="key-display" id="alice-secret">—</div>
+    </div>
+    <div class="actor-channel">
+      <div class="channel-label" style="font-size:10px;color:var(--text-dim);">Public<br>Channel</div>
+      <div class="channel-line" id="channel-pk" style="background:var(--teal);min-height:40px;"></div>
+      <div class="channel-label">pk →</div>
+      <div class="channel-line" id="channel-ct" style="background:var(--purple);min-height:40px;"></div>
+      <div class="channel-label">← ct</div>
+    </div>
+    <div class="actor-panel actor-bob">
+      <div class="actor-name">👤 Bob <span class="badge badge-purple" style="font-size:9px;">Encapsulator</span></div>
+      <div class="key-label">Ciphertext (ct)</div>
+      <div class="key-display" id="bob-ct">—</div>
+      <div class="key-label" style="margin-top:12px;">Shared Secret (generated)</div>
+      <div class="key-display" id="bob-secret">—</div>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="exchange-log" id="exchange-log">
+    <div class="log-line log-sys">[ Ready ] Click a step below to begin the ML-KEM exchange.</div>
+  </div>
+
+  <!-- Controls -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin:16px 0;">
+    <button class="btn btn-sm btn-primary" id="btn-step0" onclick="runStep(0)">Step 1: Generate Keypair</button>
+    <button class="btn btn-sm btn-ghost" id="btn-step1" onclick="runStep(1)" disabled>Step 2: Encapsulate</button>
+    <button class="btn btn-sm btn-ghost" id="btn-step2" onclick="runStep(2)" disabled>Step 3: Decapsulate</button>
+    <button class="btn btn-sm btn-ghost" id="btn-step3" onclick="runStep(3)" disabled>Step 4: Verify</button>
+    <button class="btn btn-sm btn-ghost" onclick="resetExchange()">↻ Reset</button>
+  </div>
+
+  <div id="match-banner" style="display:none;" class="callout success">
+    <span class="callout-title">✅ Shared Secret Established</span>
+    Both Alice and Bob independently hold the same 32-byte shared secret. Alice never sent her private key. Bob never received it. The secret was encapsulated inside the ciphertext, which Alice could only unwrap with her private key. <strong>This is the ML-KEM protocol.</strong>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- Record Table -->
+  <h2>Record Your Results</h2>
+  <p>After running all four steps above, fill in the measurements below. These feed directly into the benchmarking exercise in the next section.</p>
+
+  <table class="record-table">
+    <thead>
+      <tr>
+        <th>Measurement</th>
+        <th>ML-KEM-768 (Your Run)</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Public key size (bytes)</td><td class="filled" id="rec-pk">—</td><td style="font-size:12px;color:var(--text-dim);">Run Step 1 to populate</td></tr>
+      <tr><td>Private key size (bytes)</td><td class="filled" id="rec-sk">—</td><td style="font-size:12px;color:var(--text-dim);">Run Step 1 to populate</td></tr>
+      <tr><td>Ciphertext size (bytes)</td><td class="filled" id="rec-ct">—</td><td style="font-size:12px;color:var(--text-dim);">Run Step 2 to populate</td></tr>
+      <tr><td>Shared secret size (bytes)</td><td class="filled" id="rec-ss">—</td><td style="font-size:12px;color:var(--text-dim);">Run Step 3 to populate</td></tr>
+      <tr><td>Secrets match?</td><td class="filled" id="rec-match">—</td><td style="font-size:12px;color:var(--text-dim);">Run Step 4 to populate</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout accent" id="compare-note" style="display:none;">
+    <span class="callout-title">📐 Compare to ECDH P-256</span>
+    ECDH P-256 public key: <strong>65 bytes</strong>. ML-KEM-768 public key: <strong>1184 bytes</strong> — about 18× larger. This is the cost of quantum resistance. In the next section you'll benchmark this tradeoff across all five algorithms and visualize why the size overhead is accepted as worthwhile.
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(1)">← Concept</button>
+    <button class="btn btn-primary" onclick="showSection(3)">Continue to Benchmarking →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 3 — BENCHMARK
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section3">
+<div class="container">
+
+  <div class="section-header">
+    <div class="section-eyebrow">Exercise 2 · Algorithm Benchmark — 100 Iterations</div>
+    <h1>ML-KEM vs RSA vs ECDH — The Tradeoff</h1>
+    <p style="font-size:14px;max-width:600px;margin-top:10px;color:var(--text-muted);">Run the benchmark simulation across all five algorithms. Observe where ML-KEM wins, where it costs more, and what the practical implication is for deployment.</p>
+  </div>
+
+  <div class="terminal">
+    <div class="term-bar"><div class="term-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div><span class="term-title">lab2_benchmark.py — 100 iterations per algorithm</span></div>
+    <div class="term-body">
+      <div class="cmt"># Benchmark ML-KEM-512/768/1024 vs RSA-2048 vs ECDH P-256</div>
+      <div><span style="color:var(--purple);">import</span> oqs, time, statistics</div>
+      <div class="blank"></div>
+      <div>algorithms = [<span style="color:var(--green);">'ML-KEM-512'</span>, <span style="color:var(--green);">'ML-KEM-768'</span>, <span style="color:var(--green);">'ML-KEM-1024'</span>]</div>
+      <div><span style="color:var(--purple);">for</span> alg <span style="color:var(--purple);">in</span> algorithms:</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;times = []</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--purple);">for</span> _ <span style="color:var(--purple);">in</span> range(<span style="color:var(--num);">100</span>):</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;kem = oqs.KeyEncapsulation(alg)</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;t0 = time.perf_counter()</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pk = kem.generate_keypair()</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ct, ss_b = kem.encap_secret(pk)</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;ss_a = kem.decap_secret(ct)</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;times.append(time.perf_counter() - t0)</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--purple);">print</span>(f<span style="color:var(--green);">"{alg}: avg={statistics.mean(times)*1000:.3f}ms"</span>)</div>
+    </div>
+  </div>
+
+  <div style="margin:20px 0;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+    <button class="btn btn-primary" id="bench-run-btn" onclick="runBenchmark()">▶ Run Benchmark (100 iterations)</button>
+    <button class="btn btn-ghost btn-sm" onclick="resetBenchmark()">↻ Reset</button>
+    <span id="bench-status" style="font-family:var(--mono);font-size:11px;color:var(--text-dim);"></span>
+  </div>
+
+  <!-- Results Table -->
+  <div id="bench-results" style="display:none;">
+    <h2>Results Table</h2>
+    <table class="record-table" style="margin-bottom:28px;">
+      <thead>
+        <tr>
+          <th>Algorithm</th>
+          <th>Keygen (ms)</th>
+          <th>Encap/Enc (ms)</th>
+          <th>Decap/Dec (ms)</th>
+          <th>Public Key (B)</th>
+          <th>Ciphertext / ct (B)</th>
+          <th>Quantum Safe?</th>
+        </tr>
+      </thead>
+      <tbody id="bench-tbody"></tbody>
+    </table>
+
+    <!-- Bar charts -->
+    <div style="display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
+      <button class="btn btn-sm" id="bchart-size" onclick="showBenchChart('size')" style="background:var(--teal-dim);color:var(--teal);border-color:rgba(57,208,216,0.3);">Public Key Size</button>
+      <button class="btn btn-sm btn-ghost" id="bchart-ct" onclick="showBenchChart('ct')">Ciphertext Size</button>
+      <button class="btn btn-sm btn-ghost" id="bchart-time" onclick="showBenchChart('time')">Total Operation Time</button>
+      <button class="btn btn-sm btn-ghost" id="bchart-keygen" onclick="showBenchChart('keygen')">Key Generation Time</button>
+    </div>
+
+    <div id="bench-chart-area" class="bench-section"></div>
+
+    <div class="callout warn" style="margin-top:24px;" id="bench-analysis">
+      <span class="callout-title">📊 Analysis — What the Numbers Tell You</span>
+      <span id="bench-analysis-text"></span>
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(2)">← Key Exchange</button>
+    <button class="btn btn-primary" onclick="showSection(4)">Continue to Break It →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 4 — BREAK IT
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section4">
+<div class="container">
+
+  <div class="section-header">
+    <div class="section-eyebrow">Break It Challenge · Two Attacks</div>
+    <h1>Test the Limits of ML-KEM</h1>
+    <p style="font-size:14px;max-width:580px;margin-top:10px;color:var(--text-muted);">Two challenges. The first attacks the ciphertext. The second forces you to make a real deployment decision.</p>
+  </div>
+
+  <!-- Challenge 1: Bit Flip -->
+  <div class="break-box">
+    <div class="break-title">💥 Challenge 1 — Ciphertext Bit Flip</div>
+    <p style="font-size:14px;margin-bottom:16px;">An attacker intercepts the ciphertext in transit and flips some bits before it reaches Alice. Does ML-KEM fail loudly (exception) or silently (wrong shared secret with no error)?</p>
+    <p style="font-size:14px;margin-bottom:20px;">Use the slider to choose how many bits to flip, then run the attack. Observe whether Alice gets a valid-looking shared secret that doesn't match Bob's.</p>
+
+    <div class="bit-slider-wrap">
+      <div class="bit-slider-label">Bits to flip in ciphertext: <span id="flip-val">1</span></div>
+      <input type="range" min="0" max="20" value="1" id="flip-slider" oninput="document.getElementById('flip-val').textContent=this.value;" />
+      <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:4px;"><span>0 (no flip)</span><span>10 bits</span><span>20 bits</span></div>
+    </div>
+
+    <button class="btn btn-red btn-sm" onclick="runBitFlip()" style="margin-top:12px;">⚡ Execute Bit Flip Attack</button>
+
+    <div class="flip-result" id="flip-result">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:14px;">Attack Simulation Output</div>
+
+      <div class="terminal" style="margin:0 0 16px;">
+        <div class="term-bar"><div class="term-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div><span class="term-title">attack_simulation.py</span></div>
+        <div class="term-body" id="flip-terminal" style="font-size:12px;padding:16px 22px;"></div>
+      </div>
+
+      <div class="secret-compare">
+        <div class="secret-box alice-box" id="flip-alice-box">
+          <div class="sb-label">Alice's Decapsulated Secret</div>
+          <div id="flip-alice-val">—</div>
+        </div>
+        <div class="secret-box bob-box" id="flip-bob-box">
+          <div class="sb-label">Bob's Original Secret</div>
+          <div id="flip-bob-val">—</div>
+        </div>
+      </div>
+
+      <div id="flip-verdict" class="callout" style="margin-top:16px;"></div>
+    </div>
+  </div>
+
+  <!-- Challenge 2: Security Level -->
+  <div class="break-box" style="border-color:rgba(188,140,255,0.25);background:linear-gradient(135deg,rgba(188,140,255,0.05),rgba(57,208,216,0.03));">
+    <div class="break-title" style="color:var(--purple);">🧠 Challenge 2 — Choose Your Security Level</div>
+    <p style="font-size:14px;margin-bottom:16px;">Scenario: A government intelligence agency needs to encrypt long-term strategic archives. The data must remain confidential for <strong>20+ years</strong>. Which ML-KEM security level do you recommend, and why?</p>
+    <p style="font-size:14px;margin-bottom:20px;">Select a level and submit your justification choice. Consider both security margin and performance overhead.</p>
+
+    <div class="level-cards">
+      <div class="level-card lc-512" id="lc-512" onclick="selectLevel('512')">
+        <div class="lc-name">ML-KEM-512</div>
+        <div class="lc-bar"></div>
+        <div class="lc-equiv">NIST Level 1 ≈ AES-128</div>
+        <div class="lc-meta">pk: 800 B<br>keygen: ~0.08 ms<br>Total: ~0.12 ms</div>
+      </div>
+      <div class="level-card lc-768" id="lc-768" onclick="selectLevel('768')">
+        <div class="lc-name">ML-KEM-768</div>
+        <div class="lc-bar"></div>
+        <div class="lc-equiv">NIST Level 3 ≈ AES-192</div>
+        <div class="lc-meta">pk: 1184 B<br>keygen: ~0.12 ms<br>Total: ~0.18 ms</div>
+      </div>
+      <div class="level-card lc-1024" id="lc-1024" onclick="selectLevel('1024')">
+        <div class="lc-name">ML-KEM-1024</div>
+        <div class="lc-bar"></div>
+        <div class="lc-equiv">NIST Level 5 ≈ AES-256</div>
+        <div class="lc-meta">pk: 1568 B<br>keygen: ~0.18 ms<br>Total: ~0.26 ms</div>
+      </div>
+    </div>
+
+    <div class="level-verdict" id="level-verdict"></div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(3)">← Benchmark</button>
+    <button class="btn btn-primary" onclick="showSection(5)">Continue to Reflection →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 5 — REFLECTION
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section5">
+<div class="container">
+
+  <div class="section-header">
+    <div class="section-eyebrow">Reflection · Closing the Loop</div>
+    <h1>Consolidate What You Built</h1>
+    <p style="font-size:14px;max-width:600px;margin-top:10px;color:var(--text-muted);">Three questions that test whether you understand not just what ML-KEM does, but why it was designed the way it was.</p>
+  </div>
+
+  <!-- Q1 -->
+  <div class="reflect-card">
+    <div class="reflect-q">1. In the bit flip challenge, ML-KEM returned a structurally valid but incorrect shared secret — no exception was thrown. What does this mean for protocol design?</div>
+    <div class="ref-opts" id="rq1-opts">
+      <div class="ref-opt" onclick="answerReflect('rq1',0,false)"><div class="ref-letter">A</div><span>Nothing — the incorrect secret will be immediately obvious because the session will fail to decrypt any payload.</span></div>
+      <div class="ref-opt" onclick="answerReflect('rq1',1,false)"><div class="ref-letter">B</div><span>ML-KEM is broken and should not be deployed.</span></div>
+      <div class="ref-opt" onclick="answerReflect('rq1',2,true)"><div class="ref-letter">C</div><span>ML-KEM is an IND-CCA2 secure primitive — it guarantees confidentiality, not authentication. Silent failure means any system using ML-KEM must add a message authentication layer (e.g., HMAC or an authenticated cipher like AES-GCM) to detect tampering. The KEM is working as designed; authentication is a separate concern.</span></div>
+      <div class="ref-opt" onclick="answerReflect('rq1',3,false)"><div class="ref-letter">D</div><span>The bit flip would be detectable if TLS were used, making this a non-issue in practice.</span></div>
+    </div>
+    <div class="answer-reveal" id="rq1-reveal"></div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="reflect-card">
+    <div class="reflect-q">2. From the benchmark, RSA-2048 key generation is roughly 200× slower than ML-KEM-768 key generation. Yet many engineers argue RSA's smaller key size is an advantage. When would this tradeoff actually favor RSA?</div>
+    <div class="ref-opts" id="rq2-opts">
+      <div class="ref-opt" onclick="answerReflect('rq2',0,false)"><div class="ref-letter">A</div><span>Never — ML-KEM is strictly better in every dimension.</span></div>
+      <div class="ref-opt" onclick="answerReflect('rq2',1,true)"><div class="ref-letter">B</div><span>In bandwidth-constrained environments (legacy IoT with tiny packet sizes) or embedded systems where the 1184-byte ML-KEM-768 public key causes significant overhead, the smaller RSA key (294 bytes) might appear attractive. However, this is a false choice — ML-KEM-512 (800 bytes) addresses most constrained scenarios while maintaining quantum safety. RSA's slow keygen also makes it poorly suited for ephemeral key generation.</span></div>
+      <div class="ref-opt" onclick="answerReflect('rq2',2,false)"><div class="ref-letter">C</div><span>When the application does not need quantum resistance, making RSA-2048 the permanent choice.</span></div>
+      <div class="ref-opt" onclick="answerReflect('rq2',3,false)"><div class="ref-letter">D</div><span>RSA's key size advantage is only relevant for digital signatures, not key exchange.</span></div>
+    </div>
+    <div class="answer-reveal" id="rq2-reveal"></div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="reflect-card">
+    <div class="reflect-q">3. Why might an organization choose to run RSA and ML-KEM simultaneously during a migration period rather than switching entirely to ML-KEM?</div>
+    <div class="ref-opts" id="rq3-opts">
+      <div class="ref-opt" onclick="answerReflect('rq3',0,false)"><div class="ref-letter">A</div><span>Because ML-KEM is experimental and not yet trusted for production use.</span></div>
+      <div class="ref-opt" onclick="answerReflect('rq3',1,false)"><div class="ref-letter">B</div><span>To save money — ML-KEM licenses are more expensive than RSA.</span></div>
+      <div class="ref-opt" onclick="answerReflect('rq3',2,true)"><div class="ref-letter">C</div><span>Hybrid deployment provides defense-in-depth: if a future vulnerability is discovered in ML-KEM's lattice assumptions, the RSA component still protects classical adversaries (and vice versa). It also allows gradual migration without breaking compatibility with legacy clients. NIST and major browser vendors explicitly recommend hybrid X25519+ML-KEM during the transition period for exactly this reason.</span></div>
+      <div class="ref-opt" onclick="answerReflect('rq3',3,false)"><div class="ref-letter">D</div><span>Because ML-KEM cannot yet interoperate with TLS without RSA as a fallback.</span></div>
+    </div>
+    <div class="answer-reveal" id="rq3-reveal"></div>
+  </div>
+
+  <!-- Hybrid diagram -->
+  <div id="hybrid-section" style="display:none;">
+    <hr class="divider" />
+    <h2>Hybrid Key Exchange — How It Works in TLS 1.3</h2>
+    <p>The hybrid approach combines an ECDH (or X25519) key share with an ML-KEM key share. The final session key is derived from both. An attacker must break <em>both</em> to compromise the session.</p>
+
+    <div class="hybrid-flow">
+      <div class="hf-node hf-rsa">
+        <div style="font-size:20px;margin-bottom:6px;">🔐</div>
+        <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--orange);">X25519</div>
+        <div style="font-size:11px;color:var(--text-muted);">Classical<br>key share</div>
+      </div>
+      <div class="hf-arrow">⊕</div>
+      <div class="hf-node hf-mlkem">
+        <div style="font-size:20px;margin-bottom:6px;">⚛️</div>
+        <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--teal);">ML-KEM-768</div>
+        <div style="font-size:11px;color:var(--text-muted);">Quantum-safe<br>key share</div>
+      </div>
+      <div class="hf-arrow">→</div>
+      <div class="hf-node hf-combine">
+        <div style="font-size:20px;margin-bottom:6px;">🔑</div>
+        <div style="font-family:var(--mono);font-size:11px;font-weight:700;color:var(--green);">HKDF(K₁ || K₂)</div>
+        <div style="font-size:11px;color:var(--text-muted);">Combined<br>session key</div>
+      </div>
+    </div>
+
+    <div class="callout success">
+      <span class="callout-title">✅ Why Hybrid Is the Recommended Migration Path</span>
+      Google Chrome, Firefox, and Cloudflare all deployed hybrid X25519+ML-KEM in 2024. The combined key is no weaker than its strongest component. If ML-KEM is someday broken classically, X25519 still protects you. If a classical adversary somehow cracks X25519, ML-KEM still protects you against quantum decryption of archived traffic. You only lose if <em>both</em> are broken simultaneously.
+    </div>
+  </div>
+
+  <!-- Completion -->
+  <div class="completion-banner" id="completionBanner">
+    <div style="font-size:48px;margin-bottom:12px;">⚛️</div>
+    <h2>Module 2 Complete</h2>
+    <p style="max-width:560px;">You implemented ML-KEM from scratch, benchmarked it against RSA and ECDH, discovered its silent failure behavior under ciphertext corruption, and selected a security level for a real deployment scenario.</p>
+    <div class="future-hook">"In Lab 3, you'll implement the other half of the NIST PQC suite: ML-DSA for digital signatures. RSA signatures are quantum-vulnerable too — and replacing them has different tradeoffs than key exchange."</div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px;">
+      <span class="badge badge-green">✓ LWE Intuition</span>
+      <span class="badge badge-green">✓ ML-KEM Exchange</span>
+      <span class="badge badge-green">✓ Benchmark Analysis</span>
+      <span class="badge badge-green">✓ Break It Challenge</span>
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(4)">← Break It</button>
+    <button class="btn btn-green" onclick="finishLab()">Finish Lab 2 →</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ─── STATE ───
+const S = {
+  sectionsVisited: new Set([0]),
+  mc1Done: false, mc2Done: false,
+  exchangeStep: -1,
+  benchDone: false,
+  bitFlipDone: false,
+  levelSelected: false,
+  reflectDone: new Set()
+};
+
+// ─── NAV ───
+function showSection(idx) {
+  document.querySelectorAll('.section-wrap').forEach((s,i) => s.classList.toggle('active', i===idx));
+  document.querySelectorAll('.nav-tab').forEach((t,i) => t.classList.toggle('active', i===idx));
+  S.sectionsVisited.add(idx);
+  updateProgress();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function updateProgress() {
+  const pct = (S.sectionsVisited.size / 6) * 100;
+  document.getElementById('progressBar').style.width = pct + '%';
+}
+function showCP(id, btn) {
+  document.querySelectorAll('.concept-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.concept-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─── LWE VISUAL ───
+const A = [[3,2,1],[1,4,2],[2,1,3]];
+const secret = [2,5,3];
+function updateLWEVis() {
+  const sigma = parseInt(document.getElementById('vis-noise').value);
+  document.getElementById('vis-noise-val').textContent = sigma;
+  const noises = A.map(() => Math.round((Math.random()*2-1)*sigma*0.5));
+  const b = A.map((row,i) => row.reduce((sum,v,j)=>sum+v*secret[j],0)+noises[i]);
+  const eqDiv = document.getElementById('vis-equations');
+  eqDiv.innerHTML = A.map((row,i) => {
+    const noise = noises[i];
+    const nStr = noise===0 ? '' : ` <span style="color:var(--orange);">${noise>0?'+':''}${noise}</span>`;
+    return `<div>${row[0]}s₁ + ${row[1]}s₂ + ${row[2]}s₃${nStr} = <span style="color:var(--teal);">${b[i]}</span></div>`;
+  }).join('');
+  let guessDisplay, guessColor, statusText;
+  if (sigma === 0) {
+    guessDisplay = '[2, 5, 3]'; guessColor = 'var(--green)';
+    statusText = '✓ σ=0: System solvable. Gaussian elimination recovers secret exactly. No security.';
+  } else if (sigma <= 3) {
+    guessDisplay = '[2, 5, 3]'; guessColor = 'var(--orange)';
+    statusText = '⚠ Low noise: Secret might still be recoverable with sufficient computation.';
+  } else if (sigma <= 15) {
+    const g = secret.map(v => v + (Math.random()>0.5?1:-1)*Math.round(Math.random()*2));
+    guessDisplay = '['+g.join(', ')+']'; guessColor = 'var(--orange)';
+    statusText = '⚠ Moderate noise: Guess is wrong. Lattice reduction algorithms needed — computationally expensive.';
+  } else {
+    const g = secret.map(() => Math.round(Math.random()*10));
+    guessDisplay = '['+g.join(', ')+']'; guessColor = 'var(--red)';
+    statusText = '✗ High noise (ML-KEM range): Guess is completely off. No known efficient recovery algorithm. Quantum-hard.';
+  }
+  const gEl = document.getElementById('vis-guess');
+  gEl.textContent = guessDisplay; gEl.style.color = guessColor;
+  document.getElementById('vis-status').textContent = statusText;
+  document.getElementById('vis-status').style.color = sigma > 15 ? 'var(--green)' : sigma > 3 ? 'var(--orange)' : 'var(--text-muted)';
+}
+updateLWEVis();
+
+// ─── MC CHECKS ───
+function answerMC(id, letter, isCorrect) {
+  if (S.mc1Done) return;
+  S.mc1Done = true;
+  const opts = document.getElementById('mc1-opts');
+  opts.querySelectorAll('.mc-option').forEach(o => {
+    const l = o.querySelector('.mc-letter').textContent;
+    if (l==='C') o.classList.add('correct');
+    else if (l===letter && !isCorrect) o.classList.add('incorrect');
+    o.style.pointerEvents='none';
+  });
+  const rev = document.getElementById('mc1-reveal');
+  rev.className = 'answer-reveal show ' + (isCorrect?'correct-reveal':'incorrect-reveal');
+  rev.innerHTML = `<span class="reveal-label">${isCorrect?'✓ Correct':'✗ Incorrect — Answer: C'}</span>${isCorrect?'Exactly right. ':''}Shor\'s algorithm works by finding the <strong>period of a modular arithmetic function</strong> — this structure exists in RSA (factoring) and ECC (discrete log). LWE is built on noisy linear algebra, which has no periodic structure for Shor\'s Fourier analysis to exploit. That is the fundamental reason lattice cryptography is considered quantum-resistant.`;
+  setTimeout(() => {
+    document.getElementById('mc2-block').style.display='block';
+    document.getElementById('mc2-block').scrollIntoView({behavior:'smooth',block:'start'});
+  }, 500);
+}
+function answerMC2(letter, isCorrect) {
+  if (S.mc2Done) return;
+  S.mc2Done = true;
+  const opts = document.getElementById('mc2-opts');
+  opts.querySelectorAll('.mc-option').forEach(o => {
+    const l = o.querySelector('.mc-letter').textContent;
+    if (l==='B') o.classList.add('correct');
+    else if (l===letter && !isCorrect) o.classList.add('incorrect');
+    o.style.pointerEvents='none';
+  });
+  const rev = document.getElementById('mc2-reveal');
+  rev.className = 'answer-reveal show ' + (isCorrect?'correct-reveal':'incorrect-reveal');
+  rev.innerHTML = `<span class="reveal-label">${isCorrect?'✓ Correct':'✗ Incorrect — Answer: B'}</span>In the KEM pattern, <strong>Bob</strong> generates the shared secret during <code>encap_secret(pk)</code> and wraps it inside the ciphertext using Alice\'s public key. Alice recovers it via <code>decap_secret(ct)</code> using her private key. This is different from ECDH where both parties contribute to deriving the shared value simultaneously.`;
+  const btn = document.getElementById('btn-to-exchange');
+  btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+}
+
+// ─── KEY EXCHANGE ───
+const FAKE_DATA = {
+  pk: '7f3a2b19e8c54d01a6f82e3b7c90d445b1f20938e74c5a6d2b19f038e7c4a506d9b2e138f74c0a512b9e038f74c0a51...',
+  sk: 'a3f87c219e4b506d9c287a3f87c219e4b506d9c287a3f87c219e4b506d9c287a3f87c219e4b506d9c...',
+  ct: 'd45e9f2a108b736cd45e9f2a108b736cd45e9f2a108b736cd45e9f2a108b736cd45e9f2a108b736...',
+  ss: '8c4f1a7b3e92d60548c4f1a7b3e92d6054',
+  pkSize: 1184, skSize: 2400, ctSize: 1088, ssSize: 32
+};
+
+function addLog(msg, cls='log-line') {
+  const log = document.getElementById('exchange-log');
+  const line = document.createElement('div');
+  line.className = cls; line.innerHTML = msg;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
+}
+
+function updatePip(step) {
+  for (let i=0; i<4; i++) {
+    const p = document.getElementById('pip'+i);
+    if (!p) continue;
+    p.className = 'step-pip ' + (i < step ? 'done' : i===step ? 'current' : 'pending');
+  }
+}
+
+function runStep(step) {
+  if (step > S.exchangeStep + 1) return;
+  S.exchangeStep = step;
+  updatePip(step);
+
+  const steps = [
+    () => {
+      document.getElementById('btn-step0').innerHTML = '<span class="spinner"></span>Running…';
+      setTimeout(() => {
+        document.getElementById('alice-pk').textContent = FAKE_DATA.pk;
+        document.getElementById('alice-pk').classList.add('has-value');
+        document.getElementById('rec-pk').textContent = FAKE_DATA.pkSize + ' B';
+        document.getElementById('rec-sk').textContent = FAKE_DATA.skSize + ' B';
+        addLog('[ Alice ] generate_keypair() complete → pk=1184B, sk=2400B', 'log-line log-alice');
+        addLog('[ Alice ] Public key published to channel.', 'log-line log-alice');
+        document.getElementById('btn-step0').textContent = '✓ Step 1 Done';
+        document.getElementById('btn-step0').disabled = true;
+        document.getElementById('btn-step1').disabled = false;
+        document.getElementById('btn-step1').className = 'btn btn-sm btn-primary';
+        document.getElementById('channel-pk').style.opacity = '1';
+      }, 900);
+    },
+    () => {
+      document.getElementById('btn-step1').innerHTML = '<span class="spinner"></span>Running…';
+      setTimeout(() => {
+        document.getElementById('bob-ct').textContent = FAKE_DATA.ct;
+        document.getElementById('bob-ct').classList.add('has-value');
+        document.getElementById('bob-secret').textContent = FAKE_DATA.ss;
+        document.getElementById('bob-secret').classList.add('has-value');
+        document.getElementById('rec-ct').textContent = FAKE_DATA.ctSize + ' B';
+        document.getElementById('rec-ss').textContent = FAKE_DATA.ssSize + ' B';
+        addLog('[ Bob ] encap_secret(pk) complete → ct=1088B, ss=32B generated.', 'log-line log-bob');
+        addLog('[ Bob ] Ciphertext sent back to Alice.', 'log-line log-bob');
+        document.getElementById('btn-step1').textContent = '✓ Step 2 Done';
+        document.getElementById('btn-step1').disabled = true;
+        document.getElementById('btn-step2').disabled = false;
+        document.getElementById('btn-step2').className = 'btn btn-sm btn-primary';
+        document.getElementById('channel-ct').style.opacity = '1';
+      }, 900);
+    },
+    () => {
+      document.getElementById('btn-step2').innerHTML = '<span class="spinner"></span>Running…';
+      setTimeout(() => {
+        document.getElementById('alice-secret').textContent = FAKE_DATA.ss;
+        document.getElementById('alice-secret').classList.add('has-value');
+        addLog('[ Alice ] decap_secret(ct) complete → ss=32B recovered.', 'log-line log-alice');
+        addLog('[ Alice ] Shared secret derived from ciphertext using private key.', 'log-line log-alice');
+        document.getElementById('btn-step2').textContent = '✓ Step 3 Done';
+        document.getElementById('btn-step2').disabled = true;
+        document.getElementById('btn-step3').disabled = false;
+        document.getElementById('btn-step3').className = 'btn btn-sm btn-primary';
+      }, 900);
+    },
+    () => {
+      document.getElementById('btn-step3').innerHTML = '<span class="spinner"></span>Verifying…';
+      setTimeout(() => {
+        document.getElementById('alice-secret').classList.add('secret-match');
+        document.getElementById('bob-secret').classList.add('secret-match');
+        document.getElementById('rec-match').textContent = 'True ✓';
+        document.getElementById('rec-match').style.color = 'var(--green)';
+        addLog('[ System ] Secrets match: True', 'log-line log-success');
+        addLog('[ System ] ML-KEM-768 exchange complete. Shared secret established.', 'log-line log-success');
+        document.getElementById('btn-step3').textContent = '✓ Step 4 Done';
+        document.getElementById('btn-step3').disabled = true;
+        document.getElementById('match-banner').style.display = 'block';
+        document.getElementById('compare-note').style.display = 'block';
+        updatePip(4);
+      }, 1000);
+    }
+  ];
+  steps[step]();
+}
+
+function resetExchange() {
+  S.exchangeStep = -1; updatePip(0);
+  ['alice-pk','alice-secret','bob-ct','bob-secret'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = '—'; el.className = 'key-display';
+  });
+  ['rec-pk','rec-sk','rec-ct','rec-ss'].forEach(id => { document.getElementById(id).textContent='—'; });
+  document.getElementById('rec-match').textContent='—'; document.getElementById('rec-match').style.color='';
+  document.getElementById('exchange-log').innerHTML = '<div class="log-line log-sys">[ Ready ] Click a step below to begin the ML-KEM exchange.</div>';
+  document.getElementById('match-banner').style.display='none';
+  document.getElementById('compare-note').style.display='none';
+  ['channel-pk','channel-ct'].forEach(id => { document.getElementById(id).style.opacity='0.3'; });
+  const steps=['btn-step0','btn-step1','btn-step2','btn-step3'];
+  steps.forEach((id,i) => {
+    const btn = document.getElementById(id);
+    btn.disabled = i!==0; btn.textContent = ['Step 1: Generate Keypair','Step 2: Encapsulate','Step 3: Decapsulate','Step 4: Verify'][i];
+    btn.className = 'btn btn-sm ' + (i===0?'btn-primary':'btn-ghost');
+  });
+}
+
+// ─── BENCHMARK DATA ───
+const benchData = [
+  { name:'RSA-2048', keygen:28.4, encap:0.48, decap:14.2, pk:294, ct:256, ss:32, safe:false },
+  { name:'ECDH P-256', keygen:0.51, encap:0.82, decap:0.82, pk:65, ct:65, ss:32, safe:false },
+  { name:'ML-KEM-512', keygen:0.083, encap:0.098, decap:0.071, pk:800, ct:768, ss:32, safe:true },
+  { name:'ML-KEM-768', keygen:0.121, encap:0.143, decap:0.104, pk:1184, ct:1088, ss:32, safe:true },
+  { name:'ML-KEM-1024', keygen:0.178, encap:0.209, decap:0.152, pk:1568, ct:1568, ss:32, safe:true },
+];
+const benchColors = ['bf-rsa','bf-ecdh','bf-512','bf-768','bf-1024'];
+const benchNames = ['RSA-2048','ECDH P-256','ML-KEM-512','ML-KEM-768','ML-KEM-1024'];
+let activeBenchChart = 'size';
+
+function runBenchmark() {
+  const btn = document.getElementById('bench-run-btn');
+  btn.innerHTML = '<span class="spinner"></span>Running 100 iterations…'; btn.disabled=true;
+  let progress = 0;
+  const statusEl = document.getElementById('bench-status');
+  const interval = setInterval(() => {
+    progress += Math.random()*15;
+    statusEl.textContent = Math.min(100,Math.round(progress)) + '% complete';
+    if (progress >= 100) {
+      clearInterval(interval);
+      statusEl.textContent = '✓ Complete';
+      btn.textContent = '✓ Benchmark Complete'; btn.disabled=false;
+      renderBenchTable(); showBenchChart('size');
+      document.getElementById('bench-results').style.display='block';
+      document.getElementById('bench-results').scrollIntoView({behavior:'smooth'});
+      S.benchDone = true;
+      // Analysis text
+      document.getElementById('bench-analysis-text').innerHTML =
+        '<strong>Key size tradeoff:</strong> ML-KEM-768 public keys (1184 B) are ~18× larger than ECDH P-256 (65 B). This affects bandwidth in handshake-heavy workloads but is negligible for bulk data transfer. <strong>Performance surprise:</strong> ML-KEM key generation is ~230× faster than RSA-2048, making ML-KEM significantly more practical for ephemeral key generation (TLS, SSH, VPN). <strong>Decapsulation vs decryption:</strong> RSA decryption (14.2 ms) is the slowest operation in the table — ML-KEM-1024 decapsulation (0.15 ms) is ~94× faster even at the highest security level.';
+    }
+  }, 120);
+}
+
+function renderBenchTable() {
+  const tbody = document.getElementById('bench-tbody');
+  tbody.innerHTML = benchData.map((d,i) => `
+    <tr class="row-${['rsa','ecdh','512','768','1024'][i]}">
+      <td style="font-family:var(--mono);font-weight:700;color:${d.safe?'var(--teal)':'var(--red)'};">${d.name}</td>
+      <td class="filled">${d.keygen.toFixed(3)}</td>
+      <td class="filled">${d.encap.toFixed(3)}</td>
+      <td class="filled">${d.decap.toFixed(3)}</td>
+      <td class="filled">${d.pk}</td>
+      <td class="filled">${d.ct}</td>
+      <td style="font-family:var(--mono);font-size:11px;font-weight:700;color:${d.safe?'var(--green)':'var(--red);'};">${d.safe?'✓ Yes':'✗ No'}</td>
+    </tr>`).join('');
+}
+
+function showBenchChart(type) {
+  activeBenchChart = type;
+  ['size','ct','time','keygen'].forEach(t => {
+    const btn = document.getElementById('bchart-'+t);
+    if (!btn) return;
+    btn.className = t===type ? 'btn btn-sm' : 'btn btn-sm btn-ghost';
+    if (t===type) { btn.style.background='var(--teal-dim)'; btn.style.color='var(--teal)'; btn.style.borderColor='rgba(57,208,216,0.3)'; }
+    else { btn.style.background=''; btn.style.color=''; btn.style.borderColor=''; }
+  });
+  const area = document.getElementById('bench-chart-area');
+  let maxVal, getter, title, unit;
+  if (type==='size') { maxVal=1600; getter=d=>d.pk; title='Public Key Size'; unit='B'; }
+  else if (type==='ct') { maxVal=1600; getter=d=>d.ct; title='Ciphertext / Exchange Size'; unit='B'; }
+  else if (type==='time') { maxVal=45; getter=d=>d.keygen+d.encap+d.decap; title='Total Operation Time (keygen+encap+decap)'; unit='ms'; }
+  else { maxVal=30; getter=d=>d.keygen; title='Key Generation Time'; unit='ms'; }
+  area.innerHTML = `<div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:16px;">${title} (${unit})</div>` +
+    benchData.map((d,i) => {
+      const val = getter(d); const pct = Math.min(100, (val/maxVal)*100);
+      return `<div class="bench-row"><div class="bench-label"><span class="blabel" style="color:${d.safe?'var(--teal)':'var(--text-muted);'}">${d.name}</span><span>${val.toFixed(val<1?3:1)} ${unit}</span></div><div class="bench-track"><div class="bench-fill ${benchColors[i]}" style="width:${pct}%;">${val > maxVal*0.15 ? val.toFixed(val<1?3:0)+' '+unit : ''}</div></div></div>`;
+    }).join('');
+}
+
+function resetBenchmark() {
+  document.getElementById('bench-results').style.display='none';
+  document.getElementById('bench-status').textContent='';
+  const btn = document.getElementById('bench-run-btn');
+  btn.textContent='▶ Run Benchmark (100 iterations)'; btn.disabled=false;
+  S.benchDone=false;
+}
+
+// ─── BIT FLIP ───
+function randHex(n) { return Array.from({length:n},()=>Math.floor(Math.random()*16).toString(16)).join(''); }
+function flipBits(hex, count) {
+  const arr = hex.split('');
+  for (let i=0; i<count; i++) {
+    const idx = Math.floor(Math.random()*arr.length);
+    arr[idx] = Math.floor(Math.random()*16).toString(16);
+  }
+  return arr.join('');
+}
+
+function runBitFlip() {
+  const flips = parseInt(document.getElementById('flip-slider').value);
+  S.bitFlipDone = true;
+  const origCT = randHex(64);
+  const corruptCT = flips===0 ? origCT : flipBits(origCT, flips);
+  const origSS = randHex(64);
+  const corruptSS = flips===0 ? origSS : randHex(64);
+  const match = flips===0;
+
+  const term = document.getElementById('flip-terminal');
+  term.innerHTML = '';
+  const lines = [
+    {cls:'out', text:`ct_original  = bytes.fromhex('${origCT.slice(0,32)}...')`},
+    {cls:'warn', text:`# Flipping ${flips} bit(s) in ciphertext...`},
+    {cls:'out', text:`ct_corrupted = bytes.fromhex('${corruptCT.slice(0,32)}...')`},
+    {cls:'blank'},
+    {cls:'out', text:`shared_bob   = bytes.fromhex('${origSS.slice(0,32)}...')`},
+    {cls:'out', text:`shared_alice = kem.decap_secret(ct_corrupted)`},
+    {cls:'blank'},
+  ];
+  if (flips===0) {
+    lines.push({cls:'ok', text:`# No corruption — secrets match as expected.`});
+    lines.push({cls:'ok', text:`Secrets match: True`});
+  } else {
+    lines.push({cls:'warn', text:`# NOTE: No exception raised. ML-KEM returns a value.`});
+    lines.push({cls:'err', text:`Secrets match: False  ← SILENT FAILURE`});
+  }
+  lines.forEach(l => {
+    const d = document.createElement('div');
+    d.className = l.cls||''; d.textContent = l.text||'';
+    term.appendChild(d);
+  });
+
+  const aliceBox = document.getElementById('flip-alice-box');
+  const aliceVal = document.getElementById('flip-alice-val');
+  const bobVal = document.getElementById('flip-bob-val');
+  aliceVal.textContent = corruptSS.slice(0,48)+'...';
+  bobVal.textContent = origSS.slice(0,48)+'...';
+  if (!match) { aliceBox.classList.add('mismatch'); } else { aliceBox.classList.remove('mismatch'); }
+
+  const verdict = document.getElementById('flip-verdict');
+  if (flips===0) {
+    verdict.className='callout success';
+    verdict.innerHTML='<span class="callout-title">✓ No Corruption</span>With 0 bits flipped, the ciphertext is intact and decapsulation succeeds. Both parties share the same 32-byte secret.';
+  } else {
+    verdict.className='callout danger';
+    verdict.innerHTML=`<span class="callout-title">⚠ Silent Failure — ${flips} Bit(s) Flipped</span>ML-KEM did <strong>not throw an exception</strong>. It returned a 32-byte value that looks like a valid shared secret — but it does not match Bob's. This is <strong>IND-CCA2 security</strong>: the primitive guarantees confidentiality under chosen ciphertext attack, but not message authentication. Any protocol using ML-KEM must layer HMAC or an AEAD cipher (like AES-GCM) on top to detect ciphertext tampering. TLS 1.3 does this automatically via its record authentication.`;
+  }
+
+  document.getElementById('flip-result').classList.add('show');
+}
+
+// ─── LEVEL SELECT ───
+const levelFeedback = {
+  '512': { color:'var(--accent)', correct:false, text: '<strong style="color:var(--accent);">ML-KEM-512</strong> — Not Recommended for this scenario. NIST Level 1 (≈AES-128) is widely considered insufficient for data requiring 20+ year confidentiality, especially given the uncertainty in quantum computing timelines. If a quantum adversary arrives sooner than expected or if classical attacks improve against Level 1, this leaves no security margin. For a government intelligence archive, this is an unacceptable risk.' },
+  '768': { color:'var(--orange)', correct:false, text: '<strong style="color:var(--teal);">ML-KEM-768</strong> — Defensible but conservative selection says Level 5 is preferable here. ML-KEM-768 (≈AES-192) is the general-purpose recommendation and is appropriate for most TLS deployments. However, for a 20-year classified archive where the performance overhead of ML-KEM-1024 is minimal and the stakes are high, the additional security margin of Level 5 is justified at very little cost.' },
+  '1024': { color:'var(--purple)', correct:true, text: '<strong style="color:var(--purple);">ML-KEM-1024</strong> — Best Choice for this scenario. NIST Level 5 (≈AES-256) provides the maximum security margin available. For a 20-year intelligence archive where decryption failure means catastrophic long-term exposure, the overhead (1568 B public key vs 1184 B, ~0.05 ms slower) is negligible relative to the stakes. Long-term archives, classified data, and anything with multi-decade confidentiality requirements should default to Level 5.' }
+};
+
+function selectLevel(level) {
+  ['512','768','1024'].forEach(l => {
+    document.getElementById('lc-'+l).classList.toggle('selected', l===level);
+  });
+  const fb = levelFeedback[level];
+  const verdict = document.getElementById('level-verdict');
+  verdict.className='level-verdict show';
+  verdict.style.borderLeft = '3px solid '+fb.color;
+  verdict.style.background = level==='1024' ? 'rgba(188,140,255,0.07)' : level==='768' ? 'var(--teal-dim)' : 'var(--accent-dim)';
+  verdict.style.padding = '18px'; verdict.style.borderRadius = '8px';
+  verdict.innerHTML = fb.text + (level==='1024' ? '<br><br><div class="callout success" style="margin:12px 0 0;"><span class="callout-title">✅ Correct Selection</span>For long-lived sensitive data, always prefer the highest available security level when performance budget allows. The overhead difference between ML-KEM-768 and ML-KEM-1024 is ~0.05 ms per operation — for an archive that is written once and read rarely, this is irrelevant.</div>' : '');
+  S.levelSelected = true;
+}
+
+// ─── REFLECT ───
+const reflectData = {
+  rq1: { correct: 2, texts: [
+    'Partially true — the session will fail if the derived keys are used to decrypt. But the failure is application-level (garbled data, MAC failure), not cryptographic-level. Without authentication wrapping, a targeted attacker can cause specific session failures that leak information over many attempts.',
+    'Incorrect. This behavior is by design and is consistent with IND-CCA2 security. ML-KEM is a Key Encapsulation Mechanism, not an authenticated encryption scheme. Its job is to protect confidentiality of the key derivation. Authentication is explicitly out of scope.',
+    'Correct. ML-KEM provides IND-CCA2 security — it is provably secure against adaptive chosen ciphertext attack. But "secure" here means the attacker cannot recover the shared secret or distinguish it from random, even with a corrupted ciphertext. It does not mean the protocol detects tampering. Authentication must be added separately, which TLS 1.3, QUIC, and virtually all modern protocols already do via AEAD ciphers.',
+    'Incorrect. TLS provides authentication through its record layer HMAC — but this authentication is a property of TLS, not of ML-KEM. If ML-KEM is used outside TLS without similar authentication wrapping, the silent failure behavior is a real vulnerability.'
+  ]},
+  rq2: { correct: 1, texts: [
+    'Incorrect. There are specific scenarios where RSA\'s smaller key size is genuinely relevant — constrained bandwidth and embedded systems are real engineering tradeoffs. "Strictly better in every dimension" is not accurate.',
+    'Correct. The bandwidth tradeoff is real in specific constrained scenarios, but ML-KEM-512 (800 B) already addresses most of those cases while being quantum-safe. RSA\'s catastrophically slow key generation (28 ms vs 0.08 ms) makes it worse for ephemeral keys. In practice, the "RSA has smaller keys" argument is valid only for very specific legacy systems that cannot accommodate 800-byte keys.',
+    'Incorrect. Even if a system doesn\'t need quantum resistance today, migrating away from RSA provides other benefits: faster keygen, better performance for ephemeral keys, and forward-proofing against harvest attacks.',
+    'Incorrect. RSA is used for both key exchange (RSA-KEM) and signatures. The key size advantage applies to both.'
+  ]},
+  rq3: { correct: 2, texts: [
+    'Incorrect. ML-KEM is NIST-standardized (FIPS 203, August 2024) and is actively deployed in Chrome, Firefox, and Cloudflare. It is production-ready.',
+    'Incorrect. ML-KEM is not licensed — it is a public standard. There is no cost difference.',
+    'Correct. Hybrid deployment is the NIST-recommended migration path. The combined key K = HKDF(K_classical || K_mlkem) provides defense-in-depth: both assumptions must be broken simultaneously for the session to be compromised. During the migration period, hybrid also maintains backward compatibility — legacy clients that don\'t support ML-KEM fall back to the classical component. Google Chrome deployed X25519+ML-KEM-768 as the default in 2024 using exactly this pattern.',
+    'Incorrect. ML-KEM interoperates with TLS 1.3 via the key_share extension (RFC-draft). The hybrid mode does not require RSA as a dependency — it can be X25519+ML-KEM without RSA at all.'
+  ]}
+};
+
+function answerReflect(qid, idx, correct) {
+  if (S.reflectDone.has(qid)) return;
+  S.reflectDone.add(qid);
+  const data = reflectData[qid];
+  const opts = document.getElementById(qid+'-opts');
+  opts.querySelectorAll('.ref-opt').forEach((o,i) => {
+    if (i===data.correct) o.classList.add('correct');
+    else if (i===idx && !correct) o.classList.add('incorrect');
+    o.style.pointerEvents='none';
+  });
+  const rev = document.getElementById(qid+'-reveal');
+  rev.className = 'answer-reveal show ' + (correct?'correct-reveal':'incorrect-reveal');
+  rev.innerHTML = `<span class="reveal-label">${correct?'✓ Correct':'✗ Incorrect'}</span>${data.texts[idx]}`;
+  if (S.reflectDone.size >= 2) {
+    document.getElementById('hybrid-section').style.display='block';
+  }
+}
+
+function finishLab() {
+  if (S.reflectDone.size < 3) {
+    alert('Please answer all three reflection questions before finishing.\nAnswered: '+S.reflectDone.size+'/3');
+    return;
+  }
+  document.getElementById('completionBanner').classList.add('show');
+  document.getElementById('completionBanner').scrollIntoView({behavior:'smooth'});
+  document.getElementById('tab5').classList.add('done');
+  updateProgress();
+}
+
+updateProgress();
+</script>
+</body>
+</html>
