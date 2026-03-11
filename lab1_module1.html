@@ -1,0 +1,1622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lab 1 — The Quantum Threat Model · PQC Series</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg: #080c10;
+  --surface: #0d1117;
+  --surface2: #161b22;
+  --surface3: #1c2330;
+  --border: #21282f;
+  --border2: #30363d;
+  --accent: #58a6ff;
+  --accent-dim: rgba(88,166,255,0.12);
+  --green: #3fb950;
+  --green-dim: rgba(63,185,80,0.1);
+  --orange: #e3b341;
+  --orange-dim: rgba(227,179,65,0.1);
+  --red: #f85149;
+  --red-dim: rgba(248,81,73,0.1);
+  --purple: #bc8cff;
+  --purple-dim: rgba(188,140,255,0.1);
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --text-dim: #484f58;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --radius: 8px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  pointer-events: none; z-index: 1000;
+}
+/* ─── PROGRESS ─── */
+.progress-track { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: var(--border); z-index: 200; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--purple)); transition: width 0.5s ease; width: 0%; }
+/* ─── NAV ─── */
+.top-nav { position: sticky; top: 0; background: rgba(8,12,16,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); z-index: 100; padding: 0 24px; }
+.nav-inner { max-width: 960px; margin: 0 auto; display: flex; align-items: center; overflow-x: auto; scrollbar-width: none; }
+.nav-inner::-webkit-scrollbar { display: none; }
+.nav-tab { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-dim); padding: 14px 16px; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; transition: all 0.2s; background: none; border-top: none; border-left: none; border-right: none; display: flex; align-items: center; gap: 6px; }
+.nav-tab:hover { color: var(--text-muted); }
+.nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.nav-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); transition: background 0.2s; }
+.nav-tab.done .nav-dot { background: var(--green); }
+.nav-tab.active .nav-dot { background: var(--accent); }
+/* ─── SECTIONS ─── */
+.section-wrap { display: none; animation: fadeIn 0.3s ease; }
+.section-wrap.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.container { max-width: 960px; margin: 0 auto; padding: 0 24px 80px; }
+/* ─── TYPE ─── */
+h1 { font-size: clamp(20px, 2.5vw, 28px); font-weight: 700; line-height: 1.25; }
+h2 { font-size: 18px; font-weight: 700; margin-bottom: 14px; }
+h3 { font-size: 15px; font-weight: 600; color: var(--accent); margin: 24px 0 8px; }
+p { color: var(--text-muted); margin-bottom: 12px; }
+p:last-child { margin-bottom: 0; }
+strong { color: var(--text); font-weight: 600; }
+.section-eyebrow { font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--accent); margin-bottom: 8px; }
+.section-header { padding: 48px 0 36px; border-bottom: 1px solid var(--border); margin-bottom: 36px; }
+/* ─── CARDS ─── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px; }
+/* ─── CALLOUTS ─── */
+.callout { border-radius: var(--radius); padding: 14px 18px; margin: 18px 0; border-left: 3px solid; font-size: 13.5px; line-height: 1.6; }
+.callout-title { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; display: block; margin-bottom: 6px; }
+.callout.info { background: var(--accent-dim); border-color: var(--accent); }
+.callout.info .callout-title { color: var(--accent); }
+.callout.warn { background: var(--orange-dim); border-color: var(--orange); }
+.callout.warn .callout-title { color: var(--orange); }
+.callout.danger { background: var(--red-dim); border-color: var(--red); }
+.callout.danger .callout-title { color: var(--red); }
+.callout.success { background: var(--green-dim); border-color: var(--green); }
+.callout.success .callout-title { color: var(--green); }
+/* ─── BADGES ─── */
+.badge { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 9px; border-radius: 20px; border: 1px solid; }
+.badge-blue { background: var(--accent-dim); color: var(--accent); border-color: rgba(88,166,255,0.3); }
+.badge-green { background: var(--green-dim); color: var(--green); border-color: rgba(63,185,80,0.3); }
+.badge-orange { background: var(--orange-dim); color: var(--orange); border-color: rgba(227,179,65,0.3); }
+.badge-red { background: var(--red-dim); color: var(--red); border-color: rgba(248,81,73,0.3); }
+.badge-purple { background: var(--purple-dim); color: var(--purple); border-color: rgba(188,140,255,0.3); }
+/* ─── BUTTONS ─── */
+.btn { font-family: var(--sans); font-size: 13px; font-weight: 600; padding: 10px 22px; border-radius: 6px; cursor: pointer; transition: all 0.18s; border: 1px solid; display: inline-flex; align-items: center; gap: 7px; text-decoration: none; }
+.btn-primary { background: var(--accent); color: #08090c; border-color: var(--accent); }
+.btn-primary:hover { background: #79b8ff; border-color: #79b8ff; }
+.btn-ghost { background: transparent; color: var(--text-muted); border-color: var(--border2); }
+.btn-ghost:hover { background: var(--surface2); color: var(--text); }
+.btn-green { background: var(--green); color: #08090c; border-color: var(--green); }
+.btn-green:hover { background: #56d364; }
+.btn-red { background: var(--red); color: white; border-color: var(--red); }
+.btn-sm { font-size: 12px; padding: 7px 16px; }
+/* ─── TERMINAL ─── */
+.mission-terminal { background: #05080b; border: 1px solid #1e2d3d; border-radius: 10px; overflow: hidden; margin: 24px 0; box-shadow: 0 0 40px rgba(88,166,255,0.06); }
+.terminal-bar { background: #0d1520; border-bottom: 1px solid #1e2d3d; padding: 10px 16px; display: flex; align-items: center; gap: 10px; }
+.terminal-dots { display: flex; gap: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot-r { background: #f85149; } .dot-y { background: #e3b341; } .dot-g { background: #3fb950; }
+.terminal-title { font-family: var(--mono); font-size: 11px; color: var(--text-dim); flex: 1; text-align: center; }
+.terminal-body { padding: 28px 32px; font-family: var(--mono); font-size: 13px; line-height: 1.9; color: #adbac7; }
+.terminal-body .prompt { color: var(--accent); }
+.terminal-body .cmd { color: var(--text); }
+.terminal-body .output { color: var(--text-muted); }
+.terminal-body .alert-line { color: var(--red); font-weight: 600; }
+.terminal-body .ok-line { color: var(--green); }
+.terminal-body .warn-line { color: var(--orange); }
+.terminal-body .blank { height: 8px; }
+/* ─── STAT GRID ─── */
+.scenario-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 20px 0; }
+.scenario-stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; }
+.stat-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
+.stat-value { font-size: 20px; font-weight: 700; color: var(--text); line-height: 1.2; }
+.stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+/* ─── MISSION OBJECTIVES ─── */
+.mission-objective { display: flex; gap: 14px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.mission-objective:last-child { border-bottom: none; }
+.obj-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; margin-top: 2px; }
+.obj-body .obj-title { font-weight: 600; font-size: 14px; color: var(--text); margin-bottom: 2px; }
+.obj-body .obj-desc { font-size: 13px; color: var(--text-muted); }
+/* ─── ALGO COMPARISON TABLE ─── */
+.algo-table { width: 100%; border-collapse: collapse; margin: 20px 0; font-size: 13px; }
+.algo-table th { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); background: var(--surface2); padding: 10px 14px; border: 1px solid var(--border); text-align: left; }
+.algo-table td { padding: 12px 14px; border: 1px solid var(--border); background: var(--surface); vertical-align: middle; }
+.algo-table tr:hover td { background: var(--surface2); }
+.algo-table .row-label { font-weight: 600; color: var(--text); }
+.algo-table .row-sub { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.status-chip { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 4px; }
+.chip-red { background: var(--red-dim); color: var(--red); }
+.chip-green { background: var(--green-dim); color: var(--green); }
+.chip-orange { background: var(--orange-dim); color: var(--orange); }
+/* ─── MC QUIZ ─── */
+.quiz-block { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin: 20px 0; }
+.q-text { font-size: 16px; font-weight: 600; color: var(--text); line-height: 1.5; margin-bottom: 20px; }
+.mc-options { display: flex; flex-direction: column; gap: 10px; }
+.mc-option { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border: 1px solid var(--border2); border-radius: 8px; cursor: pointer; transition: all 0.18s; background: var(--surface2); }
+.mc-option:hover { border-color: var(--accent); background: var(--accent-dim); }
+.mc-option.selected { border-color: var(--accent); background: var(--accent-dim); }
+.mc-option.correct { border-color: var(--green); background: var(--green-dim); pointer-events: none; }
+.mc-option.incorrect { border-color: var(--red); background: var(--red-dim); pointer-events: none; }
+.mc-letter { font-family: var(--mono); font-size: 12px; font-weight: 700; width: 24px; height: 24px; border-radius: 4px; background: var(--surface); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-muted); }
+.mc-option.selected .mc-letter { background: var(--accent); border-color: var(--accent); color: #08090c; }
+.mc-option.correct .mc-letter { background: var(--green); border-color: var(--green); color: #08090c; }
+.mc-option.incorrect .mc-letter { background: var(--red); border-color: var(--red); color: white; }
+.mc-text { font-size: 14px; color: var(--text); }
+.answer-reveal { display: none; margin-top: 16px; padding: 14px 16px; border-radius: 8px; font-size: 13.5px; line-height: 1.6; border-left: 3px solid; animation: fadeIn 0.3s ease; }
+.answer-reveal.show { display: block; }
+.answer-reveal.correct-reveal { background: var(--green-dim); border-color: var(--green); }
+.answer-reveal.incorrect-reveal { background: rgba(248,81,73,0.08); border-color: var(--red); }
+.reveal-label { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; display: block; margin-bottom: 6px; }
+.correct-reveal .reveal-label { color: var(--green); }
+.incorrect-reveal .reveal-label { color: var(--red); }
+/* ─── HNDL TIMELINE ─── */
+.timeline-stepper { margin: 24px 0; }
+.tl-step { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 12px; opacity: 0.3; max-height: 0; transition: all 0.5s ease; }
+.tl-step.visible { opacity: 1; max-height: 600px; }
+.tl-step-header { padding: 14px 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); }
+.tl-step-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+.tl-step-title { font-weight: 700; font-size: 14px; color: var(--text); }
+.tl-step-sub { font-size: 12px; color: var(--text-muted); }
+.tl-step-body { padding: 20px; }
+.tl-bar-wrap { margin: 16px 0; }
+.tl-year-bar { display: flex; position: relative; height: 48px; border-radius: 6px; overflow: hidden; background: var(--surface2); border: 1px solid var(--border); }
+.tl-segment { display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 0 10px; white-space: nowrap; flex-shrink: 0; }
+.tl-label-row { display: flex; font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-top: 6px; justify-content: space-between; }
+/* ─── ASSET TRIAGE ─── */
+.triage-intro { margin: 16px 0; font-size: 14px; color: var(--text-muted); }
+.triage-key { display: flex; gap: 10px; flex-wrap: wrap; margin: 16px 0; }
+.triage-key-item { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px; }
+.triage-key-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+.asset-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 12px; overflow: hidden; transition: border-color 0.3s; }
+.asset-card.priority-immediate { border-color: rgba(248,81,73,0.5); }
+.asset-card.priority-planned { border-color: rgba(227,179,65,0.5); }
+.asset-card.priority-monitor { border-color: rgba(88,166,255,0.5); }
+.asset-card.priority-defer { border-color: rgba(63,185,80,0.5); }
+.asset-header { padding: 14px 18px; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.asset-info { flex: 1; }
+.asset-name { font-weight: 700; font-size: 14px; color: var(--text); margin-bottom: 4px; }
+.asset-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 10px; flex-wrap: wrap; }
+.asset-tag { font-family: var(--mono); font-size: 10px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 4px; padding: 2px 7px; color: var(--text-muted); }
+.priority-selector { display: flex; gap: 6px; flex-wrap: wrap; }
+.pri-btn { font-family: var(--mono); font-size: 10px; font-weight: 700; padding: 5px 10px; border-radius: 4px; cursor: pointer; border: 1px solid var(--border2); background: var(--surface2); color: var(--text-dim); transition: all 0.15s; white-space: nowrap; }
+.pri-btn:hover { border-color: var(--accent); color: var(--accent); }
+.pri-btn.sel-immediate { background: var(--red-dim); border-color: var(--red); color: var(--red); }
+.pri-btn.sel-planned { background: var(--orange-dim); border-color: var(--orange); color: var(--orange); }
+.pri-btn.sel-monitor { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.pri-btn.sel-defer { background: var(--green-dim); border-color: var(--green); color: var(--green); }
+.asset-reveal { display: none; padding: 14px 18px; border-top: 1px solid var(--border); background: var(--surface2); font-size: 13px; line-height: 1.6; color: var(--text-muted); animation: fadeIn 0.25s ease; }
+.asset-reveal.show { display: block; }
+.asset-reveal strong { color: var(--text); }
+.triage-score-bar { display: flex; justify-content: space-between; align-items: center; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 18px; margin: 20px 0; }
+.triage-score-label { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+.triage-score-val { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--accent); }
+/* ─── BREAK IT CHALLENGE ─── */
+.break-it-box { background: linear-gradient(135deg, rgba(248,81,73,0.06), rgba(188,140,255,0.04)); border: 1px solid rgba(248,81,73,0.25); border-radius: 12px; padding: 28px; margin: 24px 0; }
+.break-it-title { font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--red); margin-bottom: 8px; }
+.slider-group { margin: 20px 0; }
+.slider-label { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
+.slider-label span { font-family: var(--mono); font-weight: 700; color: var(--accent); }
+input[type=range] { -webkit-appearance: none; width: 100%; height: 6px; border-radius: 3px; background: var(--surface2); border: 1px solid var(--border2); outline: none; cursor: pointer; }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg); }
+input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg); }
+.break-result { margin-top: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+.break-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin: 14px 0; }
+.break-stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 14px; text-align: center; }
+.break-stat .bs-label { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); margin-bottom: 6px; }
+.break-stat .bs-val { font-family: var(--mono); font-size: 20px; font-weight: 700; }
+.asset-exposure-list { margin: 14px 0; }
+.exp-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--surface2); border-radius: 6px; margin-bottom: 6px; font-size: 13px; border-left: 3px solid; }
+.exp-item.exp-yes { border-color: var(--red); }
+.exp-item.exp-no { border-color: var(--green); }
+.exp-item .exp-icon { font-size: 14px; flex-shrink: 0; }
+.exp-item .exp-name { font-weight: 600; color: var(--text); flex: 1; }
+.exp-item .exp-verdict { font-family: var(--mono); font-size: 11px; font-weight: 700; }
+.exp-item.exp-yes .exp-verdict { color: var(--red); }
+.exp-item.exp-no .exp-verdict { color: var(--green); }
+/* ─── BRIEFING ─── */
+.briefing-area { margin: 20px 0; }
+.briefing-options { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+.brief-opt { padding: 14px 18px; border: 1px solid var(--border2); border-radius: 8px; cursor: pointer; background: var(--surface2); transition: all 0.18s; font-size: 14px; line-height: 1.5; color: var(--text-muted); }
+.brief-opt:hover { border-color: var(--accent); background: var(--accent-dim); color: var(--text); }
+.brief-opt.selected { border-color: var(--accent); background: var(--accent-dim); color: var(--text); }
+.brief-opt.correct { border-color: var(--green); background: var(--green-dim); pointer-events: none; }
+.brief-opt.incorrect { border-color: var(--red); background: var(--red-dim); pointer-events: none; }
+/* ─── REFLECTION ─── */
+.reflect-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin-bottom: 20px; }
+.reflect-q { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 14px; line-height: 1.5; }
+.reflect-options { display: flex; flex-direction: column; gap: 8px; }
+.ref-opt { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border: 1px solid var(--border2); border-radius: 8px; cursor: pointer; background: var(--surface2); transition: all 0.18s; font-size: 13.5px; line-height: 1.5; color: var(--text-muted); }
+.ref-opt:hover { border-color: var(--accent); background: var(--accent-dim); color: var(--text); }
+.ref-opt.correct { border-color: var(--green); background: var(--green-dim); pointer-events: none; color: var(--text); }
+.ref-opt.incorrect { border-color: var(--red); background: var(--red-dim); pointer-events: none; }
+.ref-opt-letter { font-family: var(--mono); font-size: 12px; font-weight: 700; width: 22px; height: 22px; border-radius: 4px; background: var(--surface); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-dim); margin-top: 1px; }
+.ref-opt.correct .ref-opt-letter { background: var(--green); border-color: var(--green); color: #08090c; }
+.ref-opt.incorrect .ref-opt-letter { background: var(--red); border-color: var(--red); color: white; }
+/* ─── COMPLETION ─── */
+.completion-banner { background: linear-gradient(135deg, rgba(63,185,80,0.08), rgba(88,166,255,0.06)); border: 1px solid rgba(63,185,80,0.25); border-radius: 12px; padding: 36px; text-align: center; margin: 32px 0; display: none; }
+.completion-banner.show { display: block; animation: fadeIn 0.4s ease; }
+.completion-banner h2 { font-size: 22px; color: var(--green); margin-bottom: 10px; }
+.future-hook { background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; padding: 16px 20px; font-style: italic; font-size: 15px; color: var(--accent); max-width: 600px; margin: 16px auto 20px; line-height: 1.6; }
+/* ─── FOOTER NAV ─── */
+.section-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--border); gap: 12px; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 28px 0; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.cursor { display: inline-block; animation: blink 1s step-end infinite; color: var(--accent); }
+@keyframes pulse-red { 0%,100%{box-shadow:0 0 8px rgba(248,81,73,0.1)} 50%{box-shadow:0 0 24px rgba(248,81,73,0.35)} }
+/* ─── CONCEPT TABS ─── */
+.concept-tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 28px; overflow-x: auto; scrollbar-width: none; }
+.concept-tab { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-dim); padding: 11px 18px; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; transition: all 0.2s; background: none; border-top: none; border-left: none; border-right: none; }
+.concept-tab:hover { color: var(--text-muted); }
+.concept-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.concept-panel { display: none; }
+.concept-panel.active { display: block; animation: fadeIn 0.25s ease; }
+/* ─── RESPONSIVE ─── */
+@media (max-width: 640px) {
+  .container { padding: 0 16px 60px; }
+  .priority-selector { gap: 4px; }
+  .break-row { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="progress-track"><div class="progress-fill" id="progressBar"></div></div>
+
+<nav class="top-nav">
+  <div class="nav-inner">
+    <button class="nav-tab active" onclick="showSection(0)" id="tab0"><span class="nav-dot"></span> Mission Brief</button>
+    <button class="nav-tab" onclick="showSection(1)" id="tab1"><span class="nav-dot"></span> Concept</button>
+    <button class="nav-tab" onclick="showSection(2)" id="tab2"><span class="nav-dot"></span> HNDL Timeline</button>
+    <button class="nav-tab" onclick="showSection(3)" id="tab3"><span class="nav-dot"></span> Asset Triage</button>
+    <button class="nav-tab" onclick="showSection(4)" id="tab4"><span class="nav-dot"></span> Break It</button>
+    <button class="nav-tab" onclick="showSection(5)" id="tab5"><span class="nav-dot"></span> Reflection</button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 0 — MISSION BRIEF
+══════════════════════════════════════════════════ -->
+<div class="section-wrap active" id="section0">
+<div class="container">
+
+  <div class="section-header">
+    <div class="section-eyebrow">Lab 1 of 5 · Post-Quantum Cryptography</div>
+    <h1>The Quantum Threat Model</h1>
+    <p style="font-size:15px; max-width:640px; margin-top:10px;">It is 2031. There is no coding in this lab — only analysis and decision-making. Your job: understand why the cryptographic world just changed overnight, and what should have been done years ago.</p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:18px;">
+      <span class="badge badge-blue">⏱ 75–90 Min</span>
+      <span class="badge badge-orange">⚠ No Implementation</span>
+      <span class="badge badge-purple">🧠 Analysis + Reasoning</span>
+    </div>
+  </div>
+
+  <!-- 2031 Breaking News Terminal -->
+  <div class="mission-terminal" style="animation: pulse-red 3s ease-in-out 1;">
+    <div class="terminal-bar">
+      <div class="terminal-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+      <span class="terminal-title">BREAKING — quantum-announcement.log — 2031-03-14</span>
+    </div>
+    <div class="terminal-body">
+      <div><span class="alert-line">[ BREAKING ] GOVERNMENT ANNOUNCES CRYPTOGRAPHICALLY RELEVANT QUANTUM COMPUTER</span></div>
+      <div class="blank"></div>
+      <div class="output">Date: March 14, 2031</div>
+      <div class="output">Classification: UNCLASSIFIED — Public Release</div>
+      <div class="blank"></div>
+      <div class="output">"...a quantum processing system capable of factoring 2048-bit RSA keys in under</div>
+      <div class="output"> 8 hours has been operational since Q4 2030. The machine exploits Shor's algorithm</div>
+      <div class="output"> at scale on error-corrected logical qubits..."</div>
+      <div class="blank"></div>
+      <div class="alert-line">[ CRITICAL ] Every RSA-encrypted archive intercepted before this date is now readable.</div>
+      <div class="alert-line">[ CRITICAL ] Every ECDH session key negotiated before this date can be retroactively derived.</div>
+      <div class="blank"></div>
+      <div class="warn-line">[ WARN ] Organizations that migrated to ML-KEM / ML-DSA before 2029: UNAFFECTED.</div>
+      <div class="warn-line">[ WARN ] Organizations still running RSA-2048 or ECC today: ALL PAST DATA EXPOSED.</div>
+      <div class="blank"></div>
+      <div class="output">Affected algorithm families: RSA, ECDH, ECDSA, DH, DSA</div>
+      <div class="ok-line">Unaffected algorithm families: ML-KEM, ML-DSA, SLH-DSA, AES-256, SHA-3</div>
+      <div class="blank"></div>
+      <div><span class="prompt">$ </span><span class="cmd">analyze-what-went-wrong</span><span class="cursor">_</span></div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="scenario-grid">
+    <div class="scenario-stat">
+      <div class="stat-label">Q-Day Arrived</div>
+      <div class="stat-value" style="color:var(--red);">2031</div>
+      <div class="stat-sub">Earlier than most estimates</div>
+    </div>
+    <div class="scenario-stat">
+      <div class="stat-label">RSA Harvest Window</div>
+      <div class="stat-value" style="color:var(--orange);">10+ yrs</div>
+      <div class="stat-sub">Nation-state collection since ~2020</div>
+    </div>
+    <div class="scenario-stat">
+      <div class="stat-label">NIST PQC Standard</div>
+      <div class="stat-value" style="color:var(--accent);">Aug 2024</div>
+      <div class="stat-sub">ML-KEM available for 7 years</div>
+    </div>
+    <div class="scenario-stat">
+      <div class="stat-label">Organizations Protected</div>
+      <div class="stat-value" style="color:var(--text-dim);">&lt;12%</div>
+      <div class="stat-sub">Migrated before Q-Day</div>
+    </div>
+  </div>
+
+  <!-- Objectives -->
+  <div class="card" style="margin-top:28px;">
+    <h2 style="margin-bottom:18px;">Your Mission — Four Questions to Answer</h2>
+    <div class="mission-objective">
+      <div class="obj-icon" style="background:var(--accent-dim); color:var(--accent);">🔬</div>
+      <div class="obj-body">
+        <div class="obj-title">Why Did This Happen?</div>
+        <div class="obj-desc">Understand Shor's algorithm at an intuitive level. Why can a quantum computer break RSA and ECC but not lattice-based cryptography?</div>
+      </div>
+    </div>
+    <div class="mission-objective">
+      <div class="obj-icon" style="background:var(--red-dim); color:var(--red);">📡</div>
+      <div class="obj-body">
+        <div class="obj-title">How Long Has the Attack Been Running?</div>
+        <div class="obj-desc">Map the harvest-now-decrypt-later timeline. See why data encrypted years ago was never truly safe.</div>
+      </div>
+    </div>
+    <div class="mission-objective">
+      <div class="obj-icon" style="background:var(--orange-dim); color:var(--orange);">📋</div>
+      <div class="obj-body">
+        <div class="obj-title">What Should Have Been Prioritized?</div>
+        <div class="obj-desc">Assign migration priorities to a realistic asset inventory. Sensitivity alone is not enough — time horizon matters just as much.</div>
+      </div>
+    </div>
+    <div class="mission-objective">
+      <div class="obj-icon" style="background:var(--purple-dim); color:var(--purple);">📢</div>
+      <div class="obj-body">
+        <div class="obj-title">How Do You Explain This to Leadership?</div>
+        <div class="obj-desc">Translate the threat model into a one-paragraph executive briefing. This is the skill cryptography courses rarely teach.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout warn" style="margin-top:20px;">
+    <span class="callout-title">📌 About This Lab</span>
+    Module 1 has <strong>no implementation component</strong>. Everything here is analysis and structured reasoning. You will not write code. You will, however, make decisions that a real security team had to make — and mostly got wrong.
+  </div>
+
+  <div class="section-footer">
+    <span style="font-size:12px; color:var(--text-dim); font-family:var(--mono);">SECTION 1 OF 6</span>
+    <button class="btn btn-primary" onclick="showSection(1)">Begin: Why Did This Happen? →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 1 — CONCEPT CAPSULE
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section1">
+<div class="container">
+
+  <div class="section-header">
+    <div class="section-eyebrow">Concept · Shor's Algorithm & Quantum Vulnerability</div>
+    <h1>Why Quantum Computers Break RSA — And Why They Can't Break Everything</h1>
+    <p style="font-size:14px; max-width:580px; margin-top:10px; color:var(--text-muted);">In 3–5 sentences: the core idea. No physics required.</p>
+  </div>
+
+  <!-- Concept tabs -->
+  <div class="concept-tabs">
+    <button class="concept-tab active" onclick="showConceptPanel('cp-intuition', this)">The Intuition</button>
+    <button class="concept-tab" onclick="showConceptPanel('cp-shor', this)">Shor's Algorithm</button>
+    <button class="concept-tab" onclick="showConceptPanel('cp-table', this)">Algorithm Comparison</button>
+    <button class="concept-tab" onclick="showConceptPanel('cp-grover', this)">What About AES?</button>
+  </div>
+
+  <!-- Panel: Intuition -->
+  <div class="concept-panel active" id="cp-intuition">
+    <div class="callout info">
+      <span class="callout-title">💡 The Core Idea</span>
+      RSA is secure because multiplying two large prime numbers together is fast, but reversing the process — figuring out which primes were multiplied — takes classical computers an astronomically long time. Quantum computers exploit a phenomenon called <strong>quantum superposition and interference</strong> to find the periodicity in modular arithmetic, which effectively shortcuts the factoring problem down from exponential time to polynomial time. <strong>Lattice problems don't have this shortcut.</strong> The mathematical structure that makes lattice problems hard does not exhibit the kind of periodicity that Shor's algorithm exploits.
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin:20px 0;">
+      <div class="card" style="border-color:rgba(248,81,73,0.3);">
+        <div style="font-family:var(--mono); font-size:10px; color:var(--red); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:10px;">RSA — Built on Factoring</div>
+        <p style="font-size:13px; margin:0;">
+          <strong>Hard problem:</strong> Given N = p × q, find p and q.<br>
+          <strong>Classical:</strong> Sub-exponential time — secure at 2048 bits.<br>
+          <strong>Quantum:</strong> Polynomial time via Shor's algorithm.<br><br>
+          <span style="color:var(--red); font-weight:600;">The security assumption is permanently broken.</span>
+        </p>
+      </div>
+      <div class="card" style="border-color:rgba(63,185,80,0.3);">
+        <div style="font-family:var(--mono); font-size:10px; color:var(--green); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:10px;">ML-KEM — Built on Lattices</div>
+        <p style="font-size:13px; margin:0;">
+          <strong>Hard problem:</strong> Learning With Errors (LWE) — find a secret vector given noisy linear equations.<br>
+          <strong>Classical:</strong> Exponential time.<br>
+          <strong>Quantum:</strong> No known speedup — still exponential.<br><br>
+          <span style="color:var(--green); font-weight:600;">Quantum computers provide no meaningful advantage.</span>
+        </p>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <span class="callout-title">⚠ The Key Insight</span>
+      The transition from "quantum computers don't exist yet" to "all past RSA data is readable" is <strong>instantaneous</strong>. There is no warning. No gradual degradation. One machine, one day, and every archived RSA ciphertext becomes a solved puzzle.
+    </div>
+  </div>
+
+  <!-- Panel: Shor's -->
+  <div class="concept-panel" id="cp-shor">
+    <p>Shor's algorithm works in two phases. The first phase — <strong>quantum period finding</strong> — uses a quantum Fourier transform to find the period of a specific modular function that encodes the factoring problem. The second phase extracts the prime factors from that period using classical math. The quantum part is what makes it fast.</p>
+
+    <div class="card" style="margin:20px 0;">
+      <div style="font-family:var(--mono); font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:14px;">How Shor's Attack Unfolds</div>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--border); border:1px solid var(--border); border-radius:6px; overflow:hidden; font-size:12px;">
+        <div style="background:var(--surface2); padding:12px; text-align:center;">
+          <div style="font-size:20px; margin-bottom:6px;">🎯</div>
+          <div style="font-weight:700; color:var(--text); margin-bottom:4px;">Step 1</div>
+          <div style="color:var(--text-muted);">Choose target RSA modulus N</div>
+        </div>
+        <div style="background:var(--surface2); padding:12px; text-align:center;">
+          <div style="font-size:20px; margin-bottom:6px;">⚛️</div>
+          <div style="font-weight:700; color:var(--accent); margin-bottom:4px;">Step 2 (Quantum)</div>
+          <div style="color:var(--text-muted);">Quantum Fourier transform finds period r of f(x) = a^x mod N</div>
+        </div>
+        <div style="background:var(--surface2); padding:12px; text-align:center;">
+          <div style="font-size:20px; margin-bottom:6px;">🔢</div>
+          <div style="font-weight:700; color:var(--text); margin-bottom:4px;">Step 3 (Classical)</div>
+          <div style="color:var(--text-muted);">Compute GCD(a^(r/2) ± 1, N) to get prime factors</div>
+        </div>
+        <div style="background:var(--red-dim); padding:12px; text-align:center; border-left:2px solid var(--red);">
+          <div style="font-size:20px; margin-bottom:6px;">🔓</div>
+          <div style="font-weight:700; color:var(--red); margin-bottom:4px;">Result</div>
+          <div style="color:var(--text-muted);">Private key recovered. All ciphertexts decrypted.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <span class="callout-title">📐 Why Lattices Are Different</span>
+      Lattice problems do not have exploitable periodicity. The hardness of Learning With Errors comes from noise and high-dimensional geometry — properties that quantum interference cannot amplify or cancel out. This is not a temporary gap; mathematicians have studied this for over 30 years without finding a quantum shortcut.
+    </div>
+  </div>
+
+  <!-- Panel: Table -->
+  <div class="concept-panel" id="cp-table">
+    <p style="margin-bottom:20px;">This table is the conceptual core of Lab 1. Before proceeding, you should be able to answer: <em>which of the four problem types does Shor's algorithm specifically target?</em></p>
+
+    <table class="algo-table">
+      <thead>
+        <tr>
+          <th>Problem Type</th>
+          <th>Classical Computer</th>
+          <th>Quantum Computer</th>
+          <th>Post-Quantum Safe?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="row-label">Factoring Large Integers</div>
+            <div class="row-sub">RSA-2048, RSA-4096</div>
+          </td>
+          <td><span style="color:var(--green);">Computationally infeasible</span></td>
+          <td><span style="color:var(--red); font-weight:600;">Efficient (Shor's Algorithm)</span></td>
+          <td><span class="status-chip chip-red">✗ No</span></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="row-label">Discrete Logarithm</div>
+            <div class="row-sub">ECC, ECDH, ECDSA, DH</div>
+          </td>
+          <td><span style="color:var(--green);">Computationally infeasible</span></td>
+          <td><span style="color:var(--red); font-weight:600;">Efficient (Shor's Algorithm)</span></td>
+          <td><span class="status-chip chip-red">✗ No</span></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="row-label">Lattice Problems (LWE)</div>
+            <div class="row-sub">ML-KEM, ML-DSA, SLH-DSA</div>
+          </td>
+          <td><span style="color:var(--green);">Computationally infeasible</span></td>
+          <td><span style="color:var(--green);">No known quantum speedup</span></td>
+          <td><span class="status-chip chip-green">✓ Yes</span></td>
+        </tr>
+        <tr>
+          <td>
+            <div class="row-label">Symmetric Key Search</div>
+            <div class="row-sub">AES-256, AES-128</div>
+          </td>
+          <td><span style="color:var(--green);">Infeasible (2^256 ops for AES-256)</span></td>
+          <td><span style="color:var(--orange);">Hard (Grover's — quadratic speedup only)</span></td>
+          <td><span class="status-chip chip-orange">~ Yes (double key size)</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout warn">
+      <span class="callout-title">🔑 Read This Table Carefully</span>
+      Shor's algorithm only targets problems with <strong>mathematical periodicity</strong> — specifically factoring and discrete logarithm. Grover's algorithm applies to symmetric search but only provides a <em>quadratic</em> speedup, meaning AES-256 (already using 256-bit keys) remains secure. Lattice problems have no applicable quantum algorithm at all.
+    </div>
+  </div>
+
+  <!-- Panel: Grover -->
+  <div class="concept-panel" id="cp-grover">
+    <p>A common misconception is that quantum computers break <em>all</em> cryptography. They don't. <strong>Grover's algorithm</strong> provides a quadratic speedup for unstructured search, which means brute-forcing a symmetric key goes from O(2<sup>n</sup>) to O(2<sup>n/2</sup>). For AES-256 that means 2<sup>128</sup> operations instead of 2<sup>256</sup> — which is still completely infeasible.</p>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:20px 0;">
+      <div class="card" style="border-color:rgba(248,81,73,0.3);">
+        <div style="font-family:var(--mono); font-size:10px; color:var(--red); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px;">AES-128 — Concern</div>
+        <p style="font-size:13px; margin:0;">Grover's effectively halves the key length to 64-bit security equivalent. For highly classified applications, this is considered insufficient. <strong>Upgrade to AES-256.</strong></p>
+      </div>
+      <div class="card" style="border-color:rgba(63,185,80,0.3);">
+        <div style="font-family:var(--mono); font-size:10px; color:var(--green); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px;">AES-256 — Fine</div>
+        <p style="font-size:13px; margin:0;">2<sup>128</sup> quantum operations remain computationally infeasible. No migration required for the encryption layer itself — only the key <em>exchange</em> mechanism (RSA/ECDH) needs replacement.</p>
+      </div>
+    </div>
+
+    <div class="callout success">
+      <span class="callout-title">✅ Practical Takeaway</span>
+      If your system uses <strong>RSA or ECC for key exchange</strong> but <strong>AES-256 for bulk encryption</strong> (which most TLS sessions do), the bulk encryption layer is fine. The vulnerability is in the handshake — specifically where the symmetric key was negotiated using RSA or ECDH. <strong>Replace the key exchange layer with ML-KEM.</strong>
+    </div>
+  </div>
+
+  <hr class="divider" />
+
+  <!-- ═══ MICRO-CHECK ═══ -->
+  <h2 style="margin-top:0;">Micro-Check — Before You Continue</h2>
+  <p style="margin-bottom:20px;">Answer this before moving to the timeline simulation. This is the key distinction for everything that follows.</p>
+
+  <div class="quiz-block" id="mc1-block">
+    <div class="q-text">Shor's algorithm provides an efficient quantum speedup for which of the following problem types?</div>
+    <div class="mc-options" id="mc1-opts">
+      <div class="mc-option" onclick="answerMC('mc1', 'A', false)">
+        <div class="mc-letter">A</div>
+        <div class="mc-text">Symmetric key search (brute-forcing AES)</div>
+      </div>
+      <div class="mc-option" onclick="answerMC('mc1', 'B', true)">
+        <div class="mc-letter">B</div>
+        <div class="mc-text">Integer factorization and discrete logarithm (RSA and ECC)</div>
+      </div>
+      <div class="mc-option" onclick="answerMC('mc1', 'C', false)">
+        <div class="mc-letter">C</div>
+        <div class="mc-text">Lattice-based problems (Learning With Errors)</div>
+      </div>
+      <div class="mc-option" onclick="answerMC('mc1', 'D', false)">
+        <div class="mc-letter">D</div>
+        <div class="mc-text">All of the above equally</div>
+      </div>
+    </div>
+    <div class="answer-reveal" id="mc1-reveal">
+      <span class="reveal-label">loading…</span>
+    </div>
+  </div>
+
+  <div class="quiz-block" id="mc2-block" style="display:none;">
+    <div class="q-text">An organization encrypts patient health records using AES-256 for at-rest storage, but uses ECDH for key exchange and RSA-2048 for digital signatures. Which components are vulnerable to a quantum adversary with Shor's algorithm?</div>
+    <div class="mc-options" id="mc2-opts">
+      <div class="mc-option" onclick="answerMC2('A', false)">
+        <div class="mc-letter">A</div>
+        <div class="mc-text">The AES-256 at-rest encryption only</div>
+      </div>
+      <div class="mc-option" onclick="answerMC2('B', false)">
+        <div class="mc-letter">B</div>
+        <div class="mc-text">All three components equally</div>
+      </div>
+      <div class="mc-option" onclick="answerMC2('C', true)">
+        <div class="mc-letter">C</div>
+        <div class="mc-text">The ECDH key exchange and RSA-2048 signatures, but not the AES-256 bulk encryption</div>
+      </div>
+      <div class="mc-option" onclick="answerMC2('D', false)">
+        <div class="mc-letter">D</div>
+        <div class="mc-text">None — quantum computers cannot yet break anything practical</div>
+      </div>
+    </div>
+    <div class="answer-reveal" id="mc2-reveal"></div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(0)">← Mission Brief</button>
+    <button class="btn btn-primary" id="btn-to-hndl" onclick="showSection(2)" disabled style="opacity:0.45; cursor:not-allowed;">Continue to HNDL Timeline →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 2 — HNDL TIMELINE
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section2">
+<div class="container">
+
+  <div class="section-header">
+    <div class="section-eyebrow">Visual Simulation · Harvest-Now, Decrypt-Later Attack</div>
+    <h1>The Attack Timeline</h1>
+    <p style="font-size:14px; max-width:580px; margin-top:10px; color:var(--text-muted);">Step through the lifecycle of a harvest-now-decrypt-later attack from the adversary's perspective. Then map your own organization's assets against the threat window.</p>
+  </div>
+
+  <!-- Step-by-step narrative stepper -->
+  <div style="display:flex; align-items:center; gap:12px; margin-bottom:24px; flex-wrap:wrap;">
+    <span style="font-family:var(--mono); font-size:11px; color:var(--text-dim);">REVEAL EACH PHASE:</span>
+    <button class="btn btn-sm btn-ghost" id="hndl-next-btn" onclick="advanceHNDL()">▶ Reveal Next Phase</button>
+    <button class="btn btn-sm btn-ghost" onclick="resetHNDL()">↻ Reset</button>
+    <span id="hndl-phase-label" style="font-family:var(--mono); font-size:11px; color:var(--accent);"></span>
+  </div>
+
+  <!-- Phase 1 -->
+  <div class="tl-step" id="hstep0">
+    <div class="tl-step-header">
+      <div class="tl-step-icon" style="background:var(--accent-dim); color:var(--accent);">📡</div>
+      <div>
+        <div class="tl-step-title">Phase 1 — Data in Transit (2020s)</div>
+        <div class="tl-step-sub">Right now. Your encrypted traffic is being intercepted.</div>
+      </div>
+    </div>
+    <div class="tl-step-body">
+      <p>Nation-state adversaries and well-resourced threat actors deploy <strong>passive collection infrastructure</strong> on undersea cables, internet exchange points, and cellular backbones. They do not need to decrypt anything yet. They record everything encrypted with RSA and ECC.</p>
+      <div class="mission-terminal">
+        <div class="terminal-bar"><div class="terminal-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div><span class="terminal-title">nsa-collection.log (hypothetical)</span></div>
+        <div class="terminal-body" style="font-size:12px; padding:18px 24px;">
+          <div class="output">2026-09-12 08:14:33 | Captured TLS handshake → HealthSystem-A.com → RSA-2048</div>
+          <div class="output">2026-09-12 08:14:33 | Ciphertext stored: /harvest/healthcare/2026/09/12/hs-a-00001.enc</div>
+          <div class="output">2026-09-12 08:14:34 | Captured TLS handshake → FinanceGov-B.gov → ECDH P-256</div>
+          <div class="output">2026-09-12 08:14:34 | Ciphertext stored: /harvest/gov/2026/09/12/fg-b-00001.enc</div>
+          <div class="output">...</div>
+          <div class="warn-line">Storage allocated: 847 TB this month. Collection ongoing.</div>
+        </div>
+      </div>
+      <div class="callout warn">
+        <span class="callout-title">🔍 What the Adversary Knows</span>
+        The adversary does not need to decrypt <em>now</em>. The data has value for as long as it must remain confidential. A patient health record from today must remain private for 30 years. That means if a quantum computer arrives by 2040, everything collected today is still useful.
+      </div>
+      <div style="text-align:right; margin-top:12px;"><button class="btn btn-sm btn-primary" onclick="advanceHNDL()">Next Phase →</button></div>
+    </div>
+  </div>
+
+  <!-- Phase 2 -->
+  <div class="tl-step" id="hstep1">
+    <div class="tl-step-header">
+      <div class="tl-step-icon" style="background:var(--orange-dim); color:var(--orange);">🗄️</div>
+      <div>
+        <div class="tl-step-title">Phase 2 — Long-Term Storage (2020s–2030s)</div>
+        <div class="tl-step-sub">Years of ciphertext, indexed and archived.</div>
+      </div>
+    </div>
+    <div class="tl-step-body">
+      <p>Collected ciphertext is indexed by target organization, protocol, date, and estimated data type. The adversary does not know what is inside — yet. But they know <em>who</em> they collected it from, and they can correlate metadata. The data sits cold in storage, waiting.</p>
+      <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:16px 0; font-size:12px;">
+        <div class="card" style="text-align:center;">
+          <div style="font-size:24px; margin-bottom:6px;">📁</div>
+          <div style="font-weight:700; color:var(--text); margin-bottom:4px;">Healthcare</div>
+          <div style="font-family:var(--mono); font-size:22px; color:var(--orange);">4.2 PB</div>
+          <div style="color:var(--text-dim);">2020–2031</div>
+        </div>
+        <div class="card" style="text-align:center;">
+          <div style="font-size:24px; margin-bottom:6px;">🏛️</div>
+          <div style="font-weight:700; color:var(--text); margin-bottom:4px;">Government</div>
+          <div style="font-family:var(--mono); font-size:22px; color:var(--orange);">18.7 PB</div>
+          <div style="color:var(--text-dim);">2020–2031</div>
+        </div>
+        <div class="card" style="text-align:center;">
+          <div style="font-size:24px; margin-bottom:6px;">🏦</div>
+          <div style="font-weight:700; color:var(--text); margin-bottom:4px;">Financial</div>
+          <div style="font-family:var(--mono); font-size:22px; color:var(--orange);">11.3 PB</div>
+          <div style="color:var(--text-dim);">2020–2031</div>
+        </div>
+      </div>
+      <div style="text-align:right; margin-top:12px;"><button class="btn btn-sm btn-primary" onclick="advanceHNDL()">Next Phase →</button></div>
+    </div>
+  </div>
+
+  <!-- Phase 3 -->
+  <div class="tl-step" id="hstep2">
+    <div class="tl-step-header">
+      <div class="tl-step-icon" style="background:var(--red-dim); color:var(--red);">⚛️</div>
+      <div>
+        <div class="tl-step-title">Phase 3 — Q-Day (2031)</div>
+        <div class="tl-step-sub">The machine exists. Decryption begins.</div>
+      </div>
+    </div>
+    <div class="tl-step-body">
+      <p>A cryptographically relevant quantum computer comes online. It is not magic — it takes hours to factor a single RSA key. But there are archives full of ciphertext. The adversary starts with the highest-priority targets: government communications, defense contractors, hospital records for intelligence value.</p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px; margin:16px 0;">
+        <div style="background:var(--red-dim); border:1px solid rgba(248,81,73,0.3); border-radius:8px; padding:16px; font-family:var(--mono); font-size:12px; line-height:1.7;">
+          <div style="font-weight:700; color:var(--red); margin-bottom:8px;">RSA-2048 Status</div>
+          <div>Factor time: ~8 hours/key</div>
+          <div style="color:var(--red);">Status: BROKEN</div>
+          <div>All past session keys: EXPOSED</div>
+        </div>
+        <div style="background:var(--green-dim); border:1px solid rgba(63,185,80,0.3); border-radius:8px; padding:16px; font-family:var(--mono); font-size:12px; line-height:1.7;">
+          <div style="font-weight:700; color:var(--green); margin-bottom:8px;">ML-KEM Status</div>
+          <div>Lattice security: INTACT</div>
+          <div style="color:var(--green);">Status: SECURE</div>
+          <div>All past ciphertexts: PROTECTED</div>
+        </div>
+      </div>
+      <div style="text-align:right; margin-top:12px;"><button class="btn btn-sm btn-primary" onclick="advanceHNDL()">Next Phase →</button></div>
+    </div>
+  </div>
+
+  <!-- Phase 4 -->
+  <div class="tl-step" id="hstep3">
+    <div class="tl-step-header">
+      <div class="tl-step-icon" style="background:var(--red-dim); color:var(--red);">🔓</div>
+      <div>
+        <div class="tl-step-title">Phase 4 — Retroactive Decryption</div>
+        <div class="tl-step-sub">Data from years ago becomes readable today.</div>
+      </div>
+    </div>
+    <div class="tl-step-body">
+      <p>This is the part that feels abstract until it isn't: a patient's HIV diagnosis encrypted in 2024 is readable in 2031. A company's merger strategy document from 2026 is readable now. A government agent's identity, confirmed via 2025 communications, is now known to the adversary.</p>
+
+      <div class="callout danger">
+        <span class="callout-title">🔓 The Decryption Happens in the Past</span>
+        This is not a future attack — it is a <em>retroactive</em> one. The breach did not occur in 2031. It occurred in 2024 when the data was intercepted and stored. 2031 is just when it became <em>readable</em>. From the victim's perspective, data they thought was secure has been compromised for years without their knowledge.
+      </div>
+      <div style="text-align:right; margin-top:12px;"><button class="btn btn-sm btn-primary" onclick="advanceHNDL()">See Final Summary →</button></div>
+    </div>
+  </div>
+
+  <!-- Phase 5 -->
+  <div class="tl-step" id="hstep4">
+    <div class="tl-step-header">
+      <div class="tl-step-icon" style="background:var(--green-dim); color:var(--green);">🎯</div>
+      <div>
+        <div class="tl-step-title">The Takeaway — Why Migration Had to Start in 2024</div>
+        <div class="tl-step-sub">The window was open the moment data was collected.</div>
+      </div>
+    </div>
+    <div class="tl-step-body">
+      <p>The timeline below shows why organizations that waited until 2031 to act were already too late for any data encrypted before that point. The window of risk opened the moment a nation-state began collecting RSA-encrypted traffic — potentially as early as 2015.</p>
+
+      <div class="tl-bar-wrap">
+        <div style="font-family:var(--mono); font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.1em; margin-bottom:8px;">Exposure Timeline for RSA-Encrypted Healthcare Record (30-yr retention)</div>
+        <div class="tl-year-bar">
+          <div class="tl-segment" style="width:15%; background:var(--green-dim); color:var(--green); border-right:1px solid var(--border);">Encrypted<br>2020</div>
+          <div class="tl-segment" style="width:55%; background:rgba(227,179,65,0.15); color:var(--orange);">⚠ Harvest Window — Data being collected while encrypted<br><span style="font-size:10px;">2020 → 2031</span></div>
+          <div class="tl-segment" style="width:30%; background:var(--red-dim); color:var(--red);">🔓 Decryptable<br>2031 → 2050</div>
+        </div>
+        <div class="tl-label-row"><span>2020</span><span>2025</span><span>2031 Q-Day</span><span>2040</span><span>2050</span></div>
+      </div>
+
+      <div class="callout success">
+        <span class="callout-title">✅ When Migration Should Have Started</span>
+        As soon as NIST published the final PQC standards in August 2024, any organization retaining RSA-encrypted data beyond 2030 was already inside the harvest window. The correct action was immediate planning and hybrid deployment — not waiting for Q-Day.
+      </div>
+    </div>
+  </div>
+
+  <!-- Asset timeline checker -->
+  <div id="hndl-checker" style="display:none; margin-top:32px;">
+    <hr class="divider" style="margin-bottom:28px;">
+    <h2>Timeline Risk Check</h2>
+    <p>Given the 2031 Q-Day in this scenario, determine which of the following asset types were <strong>already in the harvest window</strong> as of 2024. Click each asset to see why.</p>
+
+    <div id="asset-timeline-list">
+      <!-- populated by JS -->
+    </div>
+
+    <div class="callout info" style="margin-top:20px;">
+      <span class="callout-title">💡 The Two-Axis Rule</span>
+      An asset is in the harvest window if: <strong>(1)</strong> it is encrypted with RSA or ECC, AND <strong>(2)</strong> its required confidentiality period extends past the projected Q-Day. If both are true, data collected <em>today</em> will be decryptable once quantum hardware exists.
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(1)">← Concept</button>
+    <button class="btn btn-primary" onclick="showSection(3)">Continue to Asset Triage →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 3 — ASSET TRIAGE
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section3">
+<div class="container">
+
+  <div class="section-header">
+    <div class="section-eyebrow">Primary Exercise · Asset Migration Triage</div>
+    <h1>Assign Migration Priorities</h1>
+    <p style="font-size:14px; max-width:600px; margin-top:10px; color:var(--text-muted);">Your organization cannot migrate everything at once. Assign each asset a migration priority. The exercise includes deliberate traps — some items that appear high-priority are not, and some that appear low-priority are critical.</p>
+  </div>
+
+  <div class="callout warn" style="margin-top:0;">
+    <span class="callout-title">⚠ The Core Rule</span>
+    Migration urgency is determined by <strong>two factors</strong>, not one: <strong>sensitivity of the data</strong> AND <strong>how long it must remain confidential</strong>. A highly sensitive press release that goes public tomorrow needs no migration. A low-apparent-sensitivity R&amp;D roadmap with a 20-year horizon is a critical target.
+  </div>
+
+  <div class="triage-key">
+    <div class="triage-key-item"><div class="triage-key-dot" style="background:var(--red);"></div><span style="color:var(--red);">IMMEDIATE</span> — Migrate now. Active harvest risk.</div>
+    <div class="triage-key-item"><div class="triage-key-dot" style="background:var(--orange);"></div><span style="color:var(--orange);">PLANNED</span> — Phase 1–2 migration (1–3 years).</div>
+    <div class="triage-key-item"><div class="triage-key-dot" style="background:var(--accent);"></div><span style="color:var(--accent);">MONITOR</span> — Phase 2–3. Evaluate and schedule.</div>
+    <div class="triage-key-item"><div class="triage-key-dot" style="background:var(--green);"></div><span style="color:var(--green);">DEFER</span> — Low urgency. Short confidentiality window.</div>
+  </div>
+
+  <div style="margin:8px 0 20px;"><span id="triage-progress" style="font-family:var(--mono); font-size:12px; color:var(--text-muted);">0 / 8 assets assigned</span></div>
+
+  <!-- ASSET CARDS -->
+  <div id="assetCards">
+
+    <div class="asset-card" id="ac-0">
+      <div class="asset-header">
+        <div class="asset-info">
+          <div class="asset-name">🏥 Patient Health Records (EHR)</div>
+          <div class="asset-meta">
+            <span class="asset-tag">Algorithm: RSA-2048 + AES-256</span>
+            <span class="asset-tag">Sensitivity: Critical (PHI)</span>
+            <span class="asset-tag">Retention: 30 years (HIPAA)</span>
+            <span class="asset-tag">Exposure: Internet-facing TLS</span>
+          </div>
+        </div>
+        <div class="priority-selector">
+          <button class="pri-btn" onclick="setAssetPriority(0,'immediate',this)">IMMEDIATE</button>
+          <button class="pri-btn" onclick="setAssetPriority(0,'planned',this)">PLANNED</button>
+          <button class="pri-btn" onclick="setAssetPriority(0,'monitor',this)">MONITOR</button>
+          <button class="pri-btn" onclick="setAssetPriority(0,'defer',this)">DEFER</button>
+        </div>
+      </div>
+      <div class="asset-reveal" id="ar-0"></div>
+    </div>
+
+    <div class="asset-card" id="ac-1">
+      <div class="asset-header">
+        <div class="asset-info">
+          <div class="asset-name">📰 Press Release Drafts</div>
+          <div class="asset-meta">
+            <span class="asset-tag">Algorithm: RSA-2048 email encryption</span>
+            <span class="asset-tag">Sensitivity: Confidential</span>
+            <span class="asset-tag">Retention: Until publication (days–weeks)</span>
+            <span class="asset-tag">Exposure: Internal email</span>
+          </div>
+        </div>
+        <div class="priority-selector">
+          <button class="pri-btn" onclick="setAssetPriority(1,'immediate',this)">IMMEDIATE</button>
+          <button class="pri-btn" onclick="setAssetPriority(1,'planned',this)">PLANNED</button>
+          <button class="pri-btn" onclick="setAssetPriority(1,'monitor',this)">MONITOR</button>
+          <button class="pri-btn" onclick="setAssetPriority(1,'defer',this)">DEFER</button>
+        </div>
+      </div>
+      <div class="asset-reveal" id="ar-1"></div>
+    </div>
+
+    <div class="asset-card" id="ac-2">
+      <div class="asset-header">
+        <div class="asset-info">
+          <div class="asset-name">🔬 Long-Term R&amp;D Strategy Documents</div>
+          <div class="asset-meta">
+            <span class="asset-tag">Algorithm: ECDH for key exchange</span>
+            <span class="asset-tag">Sensitivity: Medium (internal only)</span>
+            <span class="asset-tag">Retention: 20+ years</span>
+            <span class="asset-tag">Exposure: Cloud storage (HTTPS)</span>
+          </div>
+        </div>
+        <div class="priority-selector">
+          <button class="pri-btn" onclick="setAssetPriority(2,'immediate',this)">IMMEDIATE</button>
+          <button class="pri-btn" onclick="setAssetPriority(2,'planned',this)">PLANNED</button>
+          <button class="pri-btn" onclick="setAssetPriority(2,'monitor',this)">MONITOR</button>
+          <button class="pri-btn" onclick="setAssetPriority(2,'defer',this)">DEFER</button>
+        </div>
+      </div>
+      <div class="asset-reveal" id="ar-2"></div>
+    </div>
+
+    <div class="asset-card" id="ac-3">
+      <div class="asset-header">
+        <div class="asset-info">
+          <div class="asset-name">🔑 TLS Session Keys (Web Traffic)</div>
+          <div class="asset-meta">
+            <span class="asset-tag">Algorithm: ECDH ephemeral</span>
+            <span class="asset-tag">Sensitivity: Varies (session-level)</span>
+            <span class="asset-tag">Retention: Session lifetime (&lt;1 hour)</span>
+            <span class="asset-tag">Exposure: Public internet</span>
+          </div>
+        </div>
+        <div class="priority-selector">
+          <button class="pri-btn" onclick="setAssetPriority(3,'immediate',this)">IMMEDIATE</button>
+          <button class="pri-btn" onclick="setAssetPriority(3,'planned',this)">PLANNED</button>
+          <button class="pri-btn" onclick="setAssetPriority(3,'monitor',this)">MONITOR</button>
+          <button class="pri-btn" onclick="setAssetPriority(3,'defer',this)">DEFER</button>
+        </div>
+      </div>
+      <div class="asset-reveal" id="ar-3"></div>
+    </div>
+
+    <div class="asset-card" id="ac-4">
+      <div class="asset-header">
+        <div class="asset-info">
+          <div class="asset-name">👤 Personnel Files &amp; HR Records</div>
+          <div class="asset-meta">
+            <span class="asset-tag">Algorithm: RSA-2048</span>
+            <span class="asset-tag">Sensitivity: High (PII, compensation)</span>
+            <span class="asset-tag">Retention: Duration of employment + 7 years</span>
+            <span class="asset-tag">Exposure: Internal-only VPN</span>
+          </div>
+        </div>
+        <div class="priority-selector">
+          <button class="pri-btn" onclick="setAssetPriority(4,'immediate',this)">IMMEDIATE</button>
+          <button class="pri-btn" onclick="setAssetPriority(4,'planned',this)">PLANNED</button>
+          <button class="pri-btn" onclick="setAssetPriority(4,'monitor',this)">MONITOR</button>
+          <button class="pri-btn" onclick="setAssetPriority(4,'defer',this)">DEFER</button>
+        </div>
+      </div>
+      <div class="asset-reveal" id="ar-4"></div>
+    </div>
+
+    <div class="asset-card" id="ac-5">
+      <div class="asset-header">
+        <div class="asset-info">
+          <div class="asset-name">📜 Software Code Signing Certificates</div>
+          <div class="asset-meta">
+            <span class="asset-tag">Algorithm: ECDSA (signature only)</span>
+            <span class="asset-tag">Sensitivity: Critical (software integrity)</span>
+            <span class="asset-tag">Retention: Until software deprecated</span>
+            <span class="asset-tag">Exposure: Public distribution</span>
+          </div>
+        </div>
+        <div class="priority-selector">
+          <button class="pri-btn" onclick="setAssetPriority(5,'immediate',this)">IMMEDIATE</button>
+          <button class="pri-btn" onclick="setAssetPriority(5,'planned',this)">PLANNED</button>
+          <button class="pri-btn" onclick="setAssetPriority(5,'monitor',this)">MONITOR</button>
+          <button class="pri-btn" onclick="setAssetPriority(5,'defer',this)">DEFER</button>
+        </div>
+      </div>
+      <div class="asset-reveal" id="ar-5"></div>
+    </div>
+
+    <div class="asset-card" id="ac-6">
+      <div class="asset-header">
+        <div class="asset-info">
+          <div class="asset-name">💳 Daily Transaction Logs</div>
+          <div class="asset-meta">
+            <span class="asset-tag">Algorithm: TLS (RSA-2048 handshake)</span>
+            <span class="asset-tag">Sensitivity: Medium (financial metadata)</span>
+            <span class="asset-tag">Retention: 90 days (PCI-DSS)</span>
+            <span class="asset-tag">Exposure: Internet-facing POS</span>
+          </div>
+        </div>
+        <div class="priority-selector">
+          <button class="pri-btn" onclick="setAssetPriority(6,'immediate',this)">IMMEDIATE</button>
+          <button class="pri-btn" onclick="setAssetPriority(6,'planned',this)">PLANNED</button>
+          <button class="pri-btn" onclick="setAssetPriority(6,'monitor',this)">MONITOR</button>
+          <button class="pri-btn" onclick="setAssetPriority(6,'defer',this)">DEFER</button>
+        </div>
+      </div>
+      <div class="asset-reveal" id="ar-6"></div>
+    </div>
+
+    <div class="asset-card" id="ac-7">
+      <div class="asset-header">
+        <div class="asset-info">
+          <div class="asset-name">🏛️ Legal &amp; Compliance Archive (Air-Gapped)</div>
+          <div class="asset-meta">
+            <span class="asset-tag">Algorithm: RSA-4096 + AES-256</span>
+            <span class="asset-tag">Sensitivity: Critical (privileged legal)</span>
+            <span class="asset-tag">Retention: Permanent</span>
+            <span class="asset-tag">Exposure: Air-gapped (no internet access)</span>
+          </div>
+        </div>
+        <div class="priority-selector">
+          <button class="pri-btn" onclick="setAssetPriority(7,'immediate',this)">IMMEDIATE</button>
+          <button class="pri-btn" onclick="setAssetPriority(7,'planned',this)">PLANNED</button>
+          <button class="pri-btn" onclick="setAssetPriority(7,'monitor',this)">MONITOR</button>
+          <button class="pri-btn" onclick="setAssetPriority(7,'defer',this)">DEFER</button>
+        </div>
+      </div>
+      <div class="asset-reveal" id="ar-7"></div>
+    </div>
+
+  </div>
+
+  <!-- Score reveal -->
+  <div id="triage-submit-area" style="display:none; margin-top:24px;">
+    <button class="btn btn-primary" onclick="checkTriage()">Check My Triage →</button>
+  </div>
+
+  <div id="triage-result" style="display:none; margin-top:24px;">
+    <div class="triage-score-bar">
+      <div><div class="triage-score-label">Your Score</div><div class="triage-score-val" id="triage-score-val">—</div></div>
+      <div><div class="triage-score-label">Correct Priorities</div><div style="font-size:13px; color:var(--text-muted);" id="triage-score-sub">—</div></div>
+    </div>
+    <div class="callout" id="triage-result-callout" style="margin-top:0;"></div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(2)">← HNDL Timeline</button>
+    <button class="btn btn-primary" onclick="showSection(4)">Continue to Break It Challenge →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 4 — BREAK IT CHALLENGE
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section4">
+<div class="container">
+
+  <div class="section-header">
+    <div class="section-eyebrow">Break It Challenge · Accelerated Threat Scenario</div>
+    <h1>What If Q-Day Is 2028?</h1>
+    <p style="font-size:14px; max-width:600px; margin-top:10px; color:var(--text-muted);">The original scenario assumed Q-Day in 2031. New intelligence suggests a nation-state may have a functional machine by <strong>2028</strong>. Recalculate the exposure window. Then write the executive briefing.</p>
+  </div>
+
+  <div class="break-it-box">
+    <div class="break-it-title">💥 Break It — Shift the Threat Window</div>
+    <p style="margin-bottom:20px; font-size:14px;">Use the slider to set the projected Q-Day year. The calculator will show which assets are <strong>already in the exposure window</strong> as of today (2025), and what the vulnerable data window looks like for each migration timeline.</p>
+
+    <div class="slider-group">
+      <div class="slider-label">Projected Q-Day Year: <span id="qday-val">2028</span></div>
+      <input type="range" min="2026" max="2040" value="2028" id="qday-slider" oninput="updateBreakIt()" />
+      <div style="display:flex; justify-content:space-between; font-family:var(--mono); font-size:10px; color:var(--text-dim); margin-top:4px;"><span>2026 (Worst)</span><span>2031 (Scenario)</span><span>2040 (Optimistic)</span></div>
+    </div>
+
+    <div class="slider-group">
+      <div class="slider-label">Your Organization's Migration Completion Year: <span id="mig-complete-val">2027</span></div>
+      <input type="range" min="2025" max="2035" value="2027" id="mig-slider" oninput="updateBreakIt()" />
+      <div style="display:flex; justify-content:space-between; font-family:var(--mono); font-size:10px; color:var(--text-dim); margin-top:4px;"><span>2025</span><span>2030</span><span>2035</span></div>
+    </div>
+
+    <div class="break-result" id="breakResult">
+      <div style="font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-dim); margin-bottom:14px;">Calculated Exposure</div>
+      <div class="break-row">
+        <div class="break-stat">
+          <div class="bs-label">Years in Harvest Window</div>
+          <div class="bs-val" id="bi-harvest" style="color:var(--orange);">—</div>
+        </div>
+        <div class="break-stat">
+          <div class="bs-label">Migration Gap (yrs)</div>
+          <div class="bs-val" id="bi-gap" style="color:var(--red);">—</div>
+        </div>
+        <div class="break-stat">
+          <div class="bs-label">Status</div>
+          <div class="bs-val" id="bi-status" style="font-size:14px;">—</div>
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <div style="font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-dim); margin-bottom:10px;">Asset Exposure Under This Timeline</div>
+        <div class="asset-exposure-list" id="bi-asset-list"></div>
+      </div>
+      <div id="bi-verdict" class="callout" style="margin-top:16px; display:none;"></div>
+    </div>
+  </div>
+
+  <!-- Executive Briefing Exercise -->
+  <hr class="divider" />
+  <h2>Write the Executive Briefing</h2>
+  <p>A non-technical executive has asked you for a single paragraph that explains why the organization cannot wait until 2030 to begin PQC migration. They are not a cryptographer. They understand risk and budget. Select the <strong>best</strong> executive briefing from the options below.</p>
+
+  <div class="callout info">
+    <span class="callout-title">📋 Scenario Context</span>
+    Q-Day: 2028. Migration completion (if started now): 2027. The executive has approved cybersecurity budgets before for SSL certificate renewals. They are skeptical about "future" threats. Your goal: explain the urgency without using the words "qubit," "Shor," or "lattice."
+  </div>
+
+  <div class="briefing-area">
+    <p style="margin-bottom:4px; font-weight:600; color:var(--text);">Which executive briefing best communicates the urgency?</p>
+    <div class="briefing-options" id="briefing-opts">
+      <div class="brief-opt" onclick="selectBriefing(0, false)">
+        <strong>Option A:</strong> "Quantum computers use Shor's algorithm to factor large integers in polynomial time, which compromises the computational hardness assumptions underlying RSA and ECC. We recommend migrating to ML-KEM and ML-DSA as specified in NIST FIPS 203 and 204 respectively to maintain cryptographic agility ahead of the anticipated quantum threat threshold."
+      </div>
+      <div class="brief-opt" onclick="selectBriefing(1, false)">
+        <strong>Option B:</strong> "We should upgrade our security systems because quantum computers are very powerful and could break our encryption in the future. This is an important thing to do and we should budget for it at some point."
+      </div>
+      <div class="brief-opt" onclick="selectBriefing(2, true)">
+        <strong>Option C:</strong> "Adversaries have been recording our encrypted communications for years, betting on the ability to decrypt them once sufficiently powerful computers arrive. Current intelligence estimates put that capability at 2028 — three years away. Data we encrypt today with our current system will be exposed when that threshold is crossed. Patient records we create in 2025 will remain sensitive through 2055. Starting the migration process now is the only way to protect data we haven't encrypted yet, and it takes 2–3 years to complete. Waiting is not a neutral decision — every day of delay increases the volume of data that will eventually be readable."
+      </div>
+      <div class="brief-opt" onclick="selectBriefing(3, false)">
+        <strong>Option D:</strong> "The threat is entirely theoretical and no quantum computer has broken RSA in a real attack yet. We should monitor the situation and revisit this in 2027 when the technology matures and the costs of migration have decreased."
+      </div>
+    </div>
+    <div class="answer-reveal" id="briefing-reveal"></div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(3)">← Asset Triage</button>
+    <button class="btn btn-primary" id="btn-to-reflect" onclick="showSection(5)">Continue to Reflection →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 5 — REFLECTION
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section5">
+<div class="container">
+
+  <div class="section-header">
+    <div class="section-eyebrow">Reflection · Closing the Loop</div>
+    <h1>Consolidate Your Reasoning</h1>
+    <p style="font-size:14px; max-width:600px; margin-top:10px; color:var(--text-muted);">These questions are graded for engagement, not correctness. Answer what you genuinely believe after working through this lab. Two questions have a best answer — one is fully open-ended.</p>
+  </div>
+
+  <!-- Reflection Q1 -->
+  <div class="reflect-card">
+    <div class="reflect-q">1. Why is "waiting until quantum computers actually exist" a flawed risk strategy?</div>
+    <div class="reflect-options" id="rq1-opts">
+      <div class="ref-opt" onclick="answerReflect('rq1', 0, false)">
+        <div class="ref-opt-letter">A</div>
+        <span>It is not flawed — organizations should wait for the technology to mature before committing to an expensive migration.</span>
+      </div>
+      <div class="ref-opt" onclick="answerReflect('rq1', 1, true)">
+        <div class="ref-opt-letter">B</div>
+        <span>Adversaries harvest encrypted data now. By the time a quantum computer exists, the exposure window for already-collected data has already opened — there is nothing you can do about past ciphertexts.</span>
+      </div>
+      <div class="ref-opt" onclick="answerReflect('rq1', 2, false)">
+        <div class="ref-opt-letter">C</div>
+        <span>Quantum computers already exist and this threat is currently active at scale.</span>
+      </div>
+      <div class="ref-opt" onclick="answerReflect('rq1', 3, false)">
+        <div class="ref-opt-letter">D</div>
+        <span>The migration is simple enough to complete in days, so waiting provides no benefit.</span>
+      </div>
+    </div>
+    <div class="answer-reveal" id="rq1-reveal"></div>
+  </div>
+
+  <!-- Reflection Q2 -->
+  <div class="reflect-card">
+    <div class="reflect-q">2. An organization's CISO argues: "We use AES-256 for all our sensitive data. We're already quantum-safe." What critical error are they making?</div>
+    <div class="reflect-options" id="rq2-opts">
+      <div class="ref-opt" onclick="answerReflect('rq2', 0, false)">
+        <div class="ref-opt-letter">A</div>
+        <span>AES-256 is actually broken by quantum computers using Grover's algorithm and provides zero quantum security.</span>
+      </div>
+      <div class="ref-opt" onclick="answerReflect('rq2', 1, true)">
+        <div class="ref-opt-letter">B</div>
+        <span>AES-256 protects data at rest, but the keys that protected the TLS handshakes delivering that data were likely negotiated using RSA or ECDH — which are quantum-vulnerable. An attacker who harvested those handshakes can recover the session key and decrypt the payload.</span>
+      </div>
+      <div class="ref-opt" onclick="answerReflect('rq2', 2, false)">
+        <div class="ref-opt-letter">C</div>
+        <span>AES-256 will be deprecated by NIST in 2030 regardless of quantum threats.</span>
+      </div>
+      <div class="ref-opt" onclick="answerReflect('rq2', 3, false)">
+        <div class="ref-opt-letter">D</div>
+        <span>The error is correct — AES-256 with Grover's speedup drops to only 2<sup>64</sup> security bits, making it completely broken.</span>
+      </div>
+    </div>
+    <div class="answer-reveal" id="rq2-reveal"></div>
+  </div>
+
+  <!-- Reflection Q3 -->
+  <div class="reflect-card">
+    <div class="reflect-q">3. Consider the press release drafts and the long-term R&amp;D strategy documents from the triage exercise. Both were encrypted with vulnerable algorithms. Why did they receive different migration priorities?</div>
+    <div class="reflect-options" id="rq3-opts">
+      <div class="ref-opt" onclick="answerReflect('rq3', 0, false)">
+        <div class="ref-opt-letter">A</div>
+        <span>Press releases are more sensitive than R&amp;D documents because they have public-facing implications.</span>
+      </div>
+      <div class="ref-opt" onclick="answerReflect('rq3', 1, false)">
+        <div class="ref-opt-letter">B</div>
+        <span>R&amp;D documents use a different encryption algorithm that is more vulnerable.</span>
+      </div>
+      <div class="ref-opt" onclick="answerReflect('rq3', 2, true)">
+        <div class="ref-opt-letter">C</div>
+        <span>Press release drafts have a confidentiality window measured in days — by the time a quantum computer could decrypt them, the information is already public. R&amp;D strategy documents have a 20+ year window, meaning they remain sensitive well past the projected quantum threat horizon.</span>
+      </div>
+      <div class="ref-opt" onclick="answerReflect('rq3', 3, false)">
+        <div class="ref-opt-letter">D</div>
+        <span>There is no meaningful difference — all RSA-encrypted assets should be treated identically.</span>
+      </div>
+    </div>
+    <div class="answer-reveal" id="rq3-reveal"></div>
+  </div>
+
+  <!-- Completion Banner -->
+  <div class="completion-banner" id="completionBanner">
+    <div style="font-size:48px; margin-bottom:12px;">✅</div>
+    <h2>Module 1 Complete</h2>
+    <p style="max-width:540px;">You've diagnosed the quantum threat, mapped the harvest-now-decrypt-later timeline, triaged a realistic asset inventory, and translated the threat model into executive language. These are the foundational skills that every post-quantum migration depends on.</p>
+    <div class="future-hook">"Now that you understand why migration is urgent — in Lab 2, we implement it. You'll generate ML-KEM key pairs, perform encapsulation and decapsulation, and see firsthand why lattice-based cryptography resists the quantum threat."</div>
+    <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:8px;">
+      <span class="badge badge-green">✓ Threat Model</span>
+      <span class="badge badge-green">✓ HNDL Attack</span>
+      <span class="badge badge-green">✓ Asset Triage</span>
+      <span class="badge badge-green">✓ Executive Communication</span>
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(4)">← Break It</button>
+    <button class="btn btn-green" onclick="finishLab()">Finish Lab 1 →</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ─── STATE ───
+const state = {
+  sectionsVisited: new Set([0]),
+  mc1Answered: false,
+  mc2Answered: false,
+  hndlPhase: -1,
+  triageSelections: {},
+  triageChecked: false,
+  briefingAnswered: false,
+  reflectAnswered: new Set(),
+  reflectCorrect: 0
+};
+
+const TOTAL_SECTIONS = 6;
+
+// ─── SECTION NAV ───
+function showSection(idx) {
+  document.querySelectorAll('.section-wrap').forEach((s, i) => {
+    s.classList.toggle('active', i === idx);
+  });
+  document.querySelectorAll('.nav-tab').forEach((t, i) => {
+    t.classList.toggle('active', i === idx);
+  });
+  state.sectionsVisited.add(idx);
+  updateProgress();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function updateProgress() {
+  const pct = (state.sectionsVisited.size / TOTAL_SECTIONS) * 100;
+  document.getElementById('progressBar').style.width = pct + '%';
+  state.sectionsVisited.forEach(i => {
+    const t = document.getElementById('tab' + i);
+    if (t && i < [...state.sectionsVisited].reduce((a,b)=>Math.max(a,b), 0)) {
+      t.classList.add('done');
+    }
+  });
+}
+
+// ─── CONCEPT TABS ───
+function showConceptPanel(id, btn) {
+  document.querySelectorAll('.concept-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.concept-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─── MICRO-CHECKS ───
+function answerMC(id, letter, isCorrect) {
+  if (state.mc1Answered) return;
+  state.mc1Answered = true;
+
+  const opts = document.getElementById('mc1-opts');
+  opts.querySelectorAll('.mc-option').forEach(o => {
+    const l = o.querySelector('.mc-letter').textContent;
+    if (l === 'B') o.classList.add('correct');
+    else if (l === letter && !isCorrect) o.classList.add('incorrect');
+    o.style.pointerEvents = 'none';
+  });
+
+  const reveal = document.getElementById('mc1-reveal');
+  reveal.className = 'answer-reveal show ' + (isCorrect ? 'correct-reveal' : 'incorrect-reveal');
+  reveal.innerHTML = `<span class="reveal-label">${isCorrect ? '✓ Correct' : '✗ Incorrect — Best Answer: B'}</span>${isCorrect ? 'Exactly right.' : ''} Shor\'s algorithm targets <strong>integer factorization</strong> and <strong>discrete logarithm</strong> — the mathematical foundations of RSA and ECC. It exploits quantum period-finding to solve these in polynomial time. It does <em>not</em> apply to lattice problems or symmetric key search.`;
+
+  setTimeout(() => {
+    document.getElementById('mc2-block').style.display = 'block';
+    document.getElementById('mc2-block').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 600);
+}
+
+function answerMC2(letter, isCorrect) {
+  if (state.mc2Answered) return;
+  state.mc2Answered = true;
+
+  const opts = document.getElementById('mc2-opts');
+  opts.querySelectorAll('.mc-option').forEach(o => {
+    const l = o.querySelector('.mc-letter').textContent;
+    if (l === 'C') o.classList.add('correct');
+    else if (l === letter && !isCorrect) o.classList.add('incorrect');
+    o.style.pointerEvents = 'none';
+  });
+
+  const reveal = document.getElementById('mc2-reveal');
+  reveal.className = 'answer-reveal show ' + (isCorrect ? 'correct-reveal' : 'incorrect-reveal');
+  reveal.innerHTML = `<span class="reveal-label">${isCorrect ? '✓ Correct' : '✗ Incorrect — Best Answer: C'}</span>Shor\'s algorithm targets the <strong>ECDH key exchange</strong> (discrete logarithm) and <strong>RSA-2048 signatures</strong> (integer factorization). AES-256 bulk encryption is affected only by Grover\'s quadratic speedup — which reduces security from 2<sup>256</sup> to 2<sup>128</sup> operations, still computationally infeasible. The vulnerability is in the <em>handshake</em>, not the bulk cipher.`;
+
+  // Unlock next section
+  const btn = document.getElementById('btn-to-hndl');
+  btn.disabled = false;
+  btn.style.opacity = '1';
+  btn.style.cursor = 'pointer';
+}
+
+// ─── HNDL STEPPER ───
+const HNDL_PHASES = 5;
+function advanceHNDL() {
+  state.hndlPhase++;
+  if (state.hndlPhase >= HNDL_PHASES) return;
+
+  const step = document.getElementById('hstep' + state.hndlPhase);
+  if (step) step.classList.add('visible');
+
+  const label = document.getElementById('hndl-phase-label');
+  label.textContent = `Phase ${state.hndlPhase + 1} / ${HNDL_PHASES} revealed`;
+
+  if (state.hndlPhase === HNDL_PHASES - 1) {
+    document.getElementById('hndl-next-btn').textContent = '✓ All Phases Revealed';
+    document.getElementById('hndl-next-btn').disabled = true;
+    // Show asset checker
+    setTimeout(() => {
+      document.getElementById('hndl-checker').style.display = 'block';
+      populateTimelineChecker();
+    }, 400);
+  }
+}
+
+function resetHNDL() {
+  state.hndlPhase = -1;
+  document.querySelectorAll('.tl-step').forEach(s => s.classList.remove('visible'));
+  document.getElementById('hndl-phase-label').textContent = '';
+  document.getElementById('hndl-next-btn').textContent = '▶ Reveal Next Phase';
+  document.getElementById('hndl-next-btn').disabled = false;
+  document.getElementById('hndl-checker').style.display = 'none';
+}
+
+function populateTimelineChecker() {
+  const assets = [
+    { name: '🏥 Patient Health Records', algo: 'RSA', retention: 30, inWindow: true, reason: 'RSA-encrypted with 30-year retention. Data collected in 2025 must stay secret until 2055. Q-Day 2031 falls well within that window. Active harvest target.' },
+    { name: '📰 Press Release Drafts', algo: 'RSA email', retention: 0, inWindow: false, reason: 'RSA-vulnerable, but the data becomes public within days of creation. By Q-Day 2031, these documents have no residual confidentiality value. No meaningful harvest incentive.' },
+    { name: '🔬 R&D Strategy Documents', algo: 'ECDH', retention: 20, inWindow: true, reason: 'ECDH is broken by Shor\'s algorithm. 20-year retention extends past Q-Day 2031. A nation-state collecting this traffic now can read it in 2031 and use competitive intelligence for years.' },
+    { name: '🏛️ Government Communications', algo: 'ECDSA', retention: 50, inWindow: true, reason: 'Discrete logarithm (ECDSA) is vulnerable to Shor\'s. 50-year retention on diplomatic communications means everything collected since 2010 may be exposed. Highest priority target class.' },
+    { name: '🔑 Session Tokens (JWT)', algo: 'ECDH', retention: 0, inWindow: false, reason: 'Even though ECDH is quantum-vulnerable, session tokens expire in hours or days. By Q-Day, the sessions have no value — the access windows closed long ago.' },
+  ];
+
+  const container = document.getElementById('asset-timeline-list');
+  container.innerHTML = assets.map(a => `
+    <div class="exp-item ${a.inWindow ? 'exp-yes' : 'exp-no'}">
+      <div class="exp-icon">${a.inWindow ? '⚠' : '✓'}</div>
+      <div class="exp-name">${a.name} <span style="font-family:var(--mono); font-size:10px; color:var(--text-dim);">${a.algo}</span></div>
+      <div class="exp-verdict">${a.inWindow ? 'IN WINDOW' : 'NOT IN WINDOW'}</div>
+    </div>
+    <div style="font-size:12px; color:var(--text-muted); padding: 4px 12px 12px 42px; line-height:1.5;">${a.reason}</div>
+  `).join('');
+}
+
+// ─── ASSET TRIAGE ───
+const correctPriorities = {
+  0: 'immediate', // EHR — critical sensitivity, 30yr retention, internet-facing
+  1: 'defer',     // Press releases — days to public, no long window
+  2: 'immediate', // R&D strategy — 20yr window, TRAP: medium sensitivity but long horizon
+  3: 'planned',   // TLS session keys — short lifetime BUT the infrastructure itself still matters for future traffic; planned is correct (need to protect NEW sessions)
+  4: 'planned',   // HR records — high sensitivity but internal-only, moderate window
+  5: 'immediate', // Code signing — if signature broken, software integrity compromised for as long as binaries circulate
+  6: 'defer',     // Daily transaction logs — 90 day retention; value lost long before Q-Day
+  7: 'planned'    // Legal archive — critical but air-gapped significantly reduces harvest risk; still planned not deferred due to permanence
+};
+
+const assetExplanations = {
+  0: { p: 'immediate', text: '<strong style="color:var(--red);">IMMEDIATE.</strong> PHI with 30-year HIPAA retention, RSA-encrypted, and internet-facing. This is the archetypal harvest-now-decrypt-later target. Every TLS handshake carrying patient data is being recorded by adversaries. Migration to ML-KEM for TLS and hybrid key exchange is a top priority.' },
+  1: { p: 'defer', text: '<strong style="color:var(--green);">DEFER.</strong> This is the deliberate trap. Press releases are encrypted with RSA — technically vulnerable — but they have a confidentiality window of days to weeks at most. By Q-Day, these documents are already public. No adversary gains value from decrypting yesterday\'s announcement. Short confidentiality window = low quantum risk regardless of sensitivity.' },
+  2: { p: 'immediate', text: '<strong style="color:var(--red);">IMMEDIATE.</strong> This is the second deliberate trap. These documents appear low-sensitivity ("just strategy docs") but carry a 20+ year confidentiality requirement. The ECDH key exchange is quantum-vulnerable. A competitor with nation-state access harvesting this traffic in 2025 can read your 10-year product roadmap in 2031. Long window + vulnerable algorithm = critical risk.' },
+  3: { p: 'planned', text: '<strong style="color:var(--orange);">PLANNED.</strong> Individual past session keys are low-risk because the sessions are long over. However, the TLS infrastructure is still generating new sessions daily — each one vulnerable to future quantum decryption if migration is delayed. The system itself needs migration to protect new traffic. Not immediate because past traffic value is low, but planned because future traffic is continuous.' },
+  4: { p: 'planned', text: '<strong style="color:var(--orange);">PLANNED.</strong> High-sensitivity PII with a multi-year retention window. The mitigating factor is that this system is internal-only VPN — not directly exposed to internet-level collection. Harvest risk is lower, but not zero (internal networks can be compromised). Planned migration within 2–3 years is appropriate.' },
+  5: { p: 'immediate', text: '<strong style="color:var(--red);">IMMEDIATE.</strong> ECDSA for code signing is a critical quantum risk — not because of key confidentiality, but because a forged signature is a supply chain attack. If Shor\'s can derive private keys from public ECDSA keys, an adversary could sign malicious software that passes verification. Any software distribution pipeline using ECDSA should migrate to ML-DSA urgently.' },
+  6: { p: 'defer', text: '<strong style="color:var(--green);">DEFER.</strong> 90-day PCI-DSS retention means transaction log data has no confidentiality value by Q-Day. Even though RSA handles the TLS handshake, the data collected today will be worthless to decrypt by 2028+. Defer this in favor of assets with longer confidentiality windows.' },
+  7: { p: 'planned', text: '<strong style="color:var(--orange);">PLANNED.</strong> This looks like an immediate priority — critical legal data, permanent retention, RSA-4096 (still vulnerable to Shor\'s). But it is air-gapped: the adversary has no way to intercept the encrypted data in transit. The harvest-now-decrypt-later attack requires interception. Air-gapped systems face a different threat model: physical compromise. Still needs migration, but planned rather than immediate.' }
+};
+
+function setAssetPriority(idx, priority, btn) {
+  state.triageSelections[idx] = priority;
+  const card = document.getElementById('ac-' + idx);
+  card.className = 'asset-card priority-' + priority;
+
+  // Update button styles
+  const allBtns = btn.parentElement.querySelectorAll('.pri-btn');
+  allBtns.forEach(b => {
+    b.className = 'pri-btn';
+  });
+  btn.className = 'pri-btn sel-' + priority;
+
+  // Show explanation
+  const reveal = document.getElementById('ar-' + idx);
+  const exp = assetExplanations[idx];
+  const isCorrect = priority === exp.p;
+  reveal.className = 'asset-reveal show';
+  reveal.style.borderLeft = isCorrect ? '3px solid var(--green)' : '3px solid var(--orange)';
+  reveal.style.background = isCorrect ? 'var(--green-dim)' : 'var(--orange-dim)';
+  reveal.innerHTML = exp.text;
+
+  // Update progress
+  const count = Object.keys(state.triageSelections).length;
+  document.getElementById('triage-progress').textContent = count + ' / 8 assets assigned';
+
+  if (count >= 8 && !state.triageChecked) {
+    document.getElementById('triage-submit-area').style.display = 'block';
+  }
+}
+
+function checkTriage() {
+  if (state.triageChecked) return;
+  state.triageChecked = true;
+  let correct = 0;
+  for (let i = 0; i < 8; i++) {
+    if (state.triageSelections[i] === correctPriorities[i]) correct++;
+  }
+  const resultArea = document.getElementById('triage-result');
+  resultArea.style.display = 'block';
+  document.getElementById('triage-score-val').textContent = correct + ' / 8';
+  document.getElementById('triage-score-sub').textContent = 'Priority assignments correct';
+  const callout = document.getElementById('triage-result-callout');
+  if (correct >= 7) {
+    callout.className = 'callout success'; callout.innerHTML = '<span class="callout-title">✅ Excellent Triage</span>You correctly understood that migration urgency depends on both sensitivity and confidentiality window — not sensitivity alone. The trap assets (press releases and R&D strategy) are designed to test exactly this distinction.';
+  } else if (correct >= 5) {
+    callout.className = 'callout warn'; callout.innerHTML = `<span class="callout-title">⚠ Good — Review the Traps</span>You got ${correct}/8. Pay close attention to the press release and R&D strategy items. The common mistake is prioritizing based on <em>how sensitive the data appears</em> rather than <em>how long it must stay secret</em>. Also review code signing — it is not about data confidentiality but signature forgery risk.`;
+  } else {
+    callout.className = 'callout danger'; callout.innerHTML = `<span class="callout-title">✗ Review Required</span>You got ${correct}/8. Revisit the core rule: migration priority is determined by <strong>sensitivity × confidentiality window</strong>, not sensitivity alone. Reread the explanation for each asset above before moving on.`;
+  }
+  document.getElementById('triage-submit-area').style.display = 'none';
+  resultArea.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ─── BREAK IT ───
+const biAssets = [
+  { name: '🏥 Patient Health Records', retention: 30, algo: 'RSA' },
+  { name: '🔬 R&D Strategy Documents', retention: 20, algo: 'ECDH' },
+  { name: '👤 Personnel Files', retention: 12, algo: 'RSA' },
+  { name: '📜 Code Signing Certs', retention: 15, algo: 'ECDSA' },
+  { name: '🏛️ Legal Archive', retention: 50, algo: 'RSA' },
+  { name: '📰 Press Release Drafts', retention: 0.1, algo: 'RSA' },
+  { name: '💳 Transaction Logs', retention: 0.25, algo: 'RSA' },
+];
+
+function updateBreakIt() {
+  const qday = parseInt(document.getElementById('qday-slider').value);
+  const migDone = parseInt(document.getElementById('mig-slider').value);
+  const currentYear = 2025;
+
+  document.getElementById('qday-val').textContent = qday;
+  document.getElementById('mig-complete-val').textContent = migDone;
+
+  const harvestYears = qday - currentYear;
+  const gap = qday - migDone;
+
+  document.getElementById('bi-harvest').textContent = Math.max(0, harvestYears) + ' yrs';
+  document.getElementById('bi-harvest').style.color = harvestYears > 5 ? 'var(--red)' : harvestYears > 2 ? 'var(--orange)' : 'var(--green)';
+
+  let statusText, statusColor;
+  if (gap < 0) {
+    document.getElementById('bi-gap').textContent = Math.abs(gap) + ' yrs early';
+    document.getElementById('bi-gap').style.color = 'var(--green)';
+    statusText = '✓ Protected';
+    statusColor = 'var(--green)';
+  } else if (gap === 0) {
+    document.getElementById('bi-gap').textContent = '0 (just in time)';
+    document.getElementById('bi-gap').style.color = 'var(--orange)';
+    statusText = '⚠ Borderline';
+    statusColor = 'var(--orange)';
+  } else {
+    document.getElementById('bi-gap').textContent = gap + ' yrs too late';
+    document.getElementById('bi-gap').style.color = 'var(--red)';
+    statusText = '✗ Exposed';
+    statusColor = 'var(--red)';
+  }
+  document.getElementById('bi-status').textContent = statusText;
+  document.getElementById('bi-status').style.color = statusColor;
+
+  // Asset list
+  const list = document.getElementById('bi-asset-list');
+  list.innerHTML = biAssets.map(a => {
+    const exposed = a.retention > (qday - currentYear) && gap > 0;
+    const reason = a.retention <= 0.3 ? 'Data public before Q-Day — no value to decrypt'
+      : gap <= 0 ? 'Migration complete before Q-Day — protected'
+      : exposed ? `${a.retention}yr retention exceeds ${harvestYears}yr harvest window — in window` : `Short retention (${a.retention}yr) expires before Q-Day ${qday}`;
+    return `<div class="exp-item ${exposed ? 'exp-yes' : 'exp-no'}">
+      <div class="exp-icon">${exposed ? '⚠' : '✓'}</div>
+      <div class="exp-name">${a.name} <span style="font-family:var(--mono); font-size:10px; color:var(--text-dim);">${a.algo}</span></div>
+      <div class="exp-verdict">${exposed ? 'EXPOSED' : 'SAFE'}</div>
+    </div>
+    <div style="font-size:11px; color:var(--text-muted); padding:2px 12px 8px 42px;">${reason}</div>`;
+  }).join('');
+
+  // Verdict
+  const verdict = document.getElementById('bi-verdict');
+  verdict.style.display = 'block';
+  if (gap > 2) {
+    verdict.className = 'callout danger';
+    verdict.innerHTML = `<span class="callout-title">✗ Critical Exposure</span>Your migration completes ${gap} years after Q-Day. Every asset collected during the ${harvestYears}-year harvest window with retention extending past ${qday} will be readable. Immediate escalation of migration timeline is required.`;
+  } else if (gap > 0) {
+    verdict.className = 'callout warn';
+    verdict.innerHTML = `<span class="callout-title">⚠ Narrow Miss</span>Migration completes ${gap} year(s) after Q-Day. A small subset of recently-collected high-retention assets may be exposed. Accelerate planning to close this gap.`;
+  } else {
+    verdict.className = 'callout success';
+    verdict.innerHTML = `<span class="callout-title">✓ Protected</span>Migration completes before Q-Day. Traffic collected after your migration completion date will be protected. Pre-migration traffic with long retention windows remains at risk — but you cannot retroactively protect data already collected.`;
+  }
+}
+
+// Init Break It
+updateBreakIt();
+
+// ─── EXECUTIVE BRIEFING ───
+function selectBriefing(idx, isCorrect) {
+  if (state.briefingAnswered) return;
+  state.briefingAnswered = true;
+
+  const opts = document.getElementById('briefing-opts').children;
+  Array.from(opts).forEach((o, i) => {
+    if (i === 2) o.classList.add('correct');
+    else if (i === idx && !isCorrect) o.classList.add('incorrect');
+    o.style.pointerEvents = 'none';
+  });
+
+  const reveal = document.getElementById('briefing-reveal');
+  reveal.className = 'answer-reveal show ' + (isCorrect ? 'correct-reveal' : 'incorrect-reveal');
+  if (isCorrect) {
+    reveal.innerHTML = '<span class="reveal-label">✓ Best Choice</span><strong>Option C</strong> is the best executive briefing. It avoids technical jargon, uses concrete timelines, frames the problem in terms of risk the executive understands (3 years, patient records through 2055), and makes explicit that waiting is not a neutral choice. Options A uses inaccessible technical language. Option B is vague and lacks urgency. Option D misstates the risk model and suggests delay.';
+  } else {
+    const critiques = ['Option A uses technical vocabulary (polynomial time, ML-KEM, NIST FIPS) that a non-technical executive will not process. The goal is to create urgency, not demonstrate your knowledge. A briefing the recipient cannot understand is a failed briefing.', 'Option B communicates almost nothing actionable. It acknowledges the issue but provides no timeline, no consequence, and no specific recommendation. An executive who receives this will feel free to deprioritize it.', '', 'Option D is actively dangerous — it suggests the threat is theoretical and recommends waiting. This framing could delay migration past Q-Day, and it misrepresents the harvest-now-decrypt-later dynamic (the attack is already underway; there is nothing "theoretical" about data collection).'];
+    reveal.innerHTML = `<span class="reveal-label">✗ Not the Best Choice</span>${critiques[idx]} Option C is the strongest because it uses plain language, concrete dates, and frames inaction as an active risk decision.`;
+  }
+}
+
+// ─── REFLECTION ───
+const reflectExplanations = {
+  rq1: {
+    correct: 1,
+    texts: [
+      'Incorrect. Waiting for technology to mature does reduce migration cost — but it ignores that adversaries are collecting data <em>now</em>. By the time quantum hardware exists, the harvest window has already been open for years.',
+      'Correct. The harvest-now-decrypt-later attack means the exposure window opens the moment adversaries begin collecting RSA-encrypted traffic — not when a quantum computer is built. Waiting until Q-Day to act is too late for any data already collected.',
+      'Incorrect. Quantum computers do not yet exist at the scale needed to break RSA in production. The threat is projected, not current — but the <em>harvest</em> is happening now.',
+      'Incorrect. PQC migration takes 2–3 years for most organizations due to inventory, testing, hybrid deployment, and dependency changes. This is not a quick task.'
+    ]
+  },
+  rq2: {
+    correct: 1,
+    texts: [
+      'Incorrect. AES-256 is not "broken" by Grover\'s — it is reduced from 2<sup>256</sup> to 2<sup>128</sup> security, which remains computationally infeasible. The CISO is wrong about AES being the vulnerability, but not for this reason.',
+      'Correct. AES-256 protects the <em>payload</em>, but the session key that decrypts that payload was likely delivered via an RSA or ECDH handshake. A quantum adversary who harvested the TLS handshake can recover the session key using Shor\'s algorithm, then use it to decrypt the AES-256 payload. The cipher is only as strong as its key delivery mechanism.',
+      'Incorrect. NIST has not deprecated AES-256. It is recommended for post-quantum use (with AES-128 potentially being upgraded). The issue is key exchange, not the symmetric cipher.',
+      'Incorrect. Grover\'s reduces AES-256 from 2<sup>256</sup> to 2<sup>128</sup> operations — not 2<sup>64</sup>. A 256-bit key halved by Grover\'s still requires 2<sup>128</sup> operations, which is infeasible.'
+    ]
+  },
+  rq3: {
+    correct: 2,
+    texts: [
+      'Incorrect. Press releases are not more sensitive — they are explicitly designed to become public. The confidentiality window is the decisive factor, not perceived sensitivity.',
+      'Incorrect. Both assets used quantum-vulnerable algorithms (RSA and ECDH respectively). The difference was not in the algorithm strength.',
+      'Correct. This is the core lesson of the triage exercise. Both are encrypted with vulnerable algorithms, but a press release has a confidentiality window of days — the information is public long before Q-Day. An R&D strategy document must stay confidential for 20+ years, which means data collected today will still have confidentiality value when a quantum computer can decrypt it. Migration urgency = sensitivity × time horizon.',
+      'Incorrect. Assets using the same class of vulnerable algorithm (RSA/ECC family) are NOT identical in urgency. The confidentiality window is the second crucial axis.'
+    ]
+  }
+};
+
+function answerReflect(qid, idx, isCorrect) {
+  if (state.reflectAnswered.has(qid)) return;
+  state.reflectAnswered.add(qid);
+  if (isCorrect) state.reflectCorrect++;
+
+  const data = reflectExplanations[qid];
+  const opts = document.getElementById(qid + '-opts');
+  opts.querySelectorAll('.ref-opt').forEach((o, i) => {
+    if (i === data.correct) o.classList.add('correct');
+    else if (i === idx && !isCorrect) o.classList.add('incorrect');
+    o.style.pointerEvents = 'none';
+  });
+
+  const reveal = document.getElementById(qid + '-reveal');
+  reveal.className = 'answer-reveal show ' + (isCorrect ? 'correct-reveal' : 'incorrect-reveal');
+  reveal.innerHTML = `<span class="reveal-label">${isCorrect ? '✓ Correct' : '✗ Incorrect'}</span>${data.texts[idx]}`;
+}
+
+// ─── FINISH ───
+function finishLab() {
+  if (state.reflectAnswered.size < 3) {
+    alert('Please answer all three reflection questions before finishing.\n\nAnswered: ' + state.reflectAnswered.size + '/3');
+    return;
+  }
+  const banner = document.getElementById('completionBanner');
+  banner.classList.add('show');
+  banner.scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('tab5').classList.add('done');
+  updateProgress();
+}
+
+// ─── INIT ───
+updateProgress();
+</script>
+</body>
+</html>
