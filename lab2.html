@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lab 2 — ML-KEM (Kyber) Implementation · PQC Series</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg: #080c10;
+  --surface: #0d1117;
+  --surface2: #161b22;
+  --surface3: #1c2330;
+  --border: #21282f;
+  --border2: #30363d;
+  --accent: #58a6ff;
+  --accent-dim: rgba(88,166,255,0.12);
+  --green: #3fb950;
+  --green-dim: rgba(63,185,80,0.1);
+  --orange: #e3b341;
+  --orange-dim: rgba(227,179,65,0.1);
+  --red: #f85149;
+  --red-dim: rgba(248,81,73,0.1);
+  --purple: #bc8cff;
+  --purple-dim: rgba(188,140,255,0.1);
+  --cyan: #39d2c0;
+  --cyan-dim: rgba(57,210,192,0.1);
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --text-dim: #484f58;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'IBM Plex Sans', sans-serif;
+  --radius: 8px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.7;
+  min-height: 100vh;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  pointer-events: none;
+  z-index: 1000;
+}
+
+/* ─── PROGRESS ─── */
+.progress-track { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: var(--border); z-index: 200; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--cyan), var(--accent)); transition: width 0.5s ease; width: 0%; }
+
+/* ─── NAV ─── */
+.top-nav { position: sticky; top: 0; background: rgba(8,12,16,0.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); z-index: 100; padding: 0 24px; }
+.nav-inner { max-width: 960px; margin: 0 auto; display: flex; align-items: center; gap: 0; overflow-x: auto; scrollbar-width: none; }
+.nav-inner::-webkit-scrollbar { display: none; }
+.nav-tab {
+  font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-dim); padding: 14px 14px; border-bottom: 2px solid transparent; cursor: pointer;
+  white-space: nowrap; transition: all 0.2s; background: none; border-top: none; border-left: none; border-right: none;
+  display: flex; align-items: center; gap: 6px; text-decoration: none;
+}
+.nav-tab:hover { color: var(--text-muted); }
+.nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.nav-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); transition: background 0.2s; }
+.nav-tab.done .nav-dot { background: var(--green); }
+.nav-tab.active .nav-dot { background: var(--accent); }
+
+/* ─── SECTIONS ─── */
+.section-wrap { display: none; animation: fadeIn 0.3s ease; }
+.section-wrap.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.container { max-width: 960px; margin: 0 auto; padding: 0 24px 80px; }
+
+/* ─── TYPOGRAPHY ─── */
+h1 { font-size: clamp(20px, 2.5vw, 28px); font-weight: 700; line-height: 1.25; }
+h2 { font-size: 18px; font-weight: 700; margin-bottom: 14px; }
+h3 { font-size: 15px; font-weight: 600; color: var(--accent); margin: 24px 0 8px; }
+p { color: var(--text-muted); margin-bottom: 12px; }
+p:last-child { margin-bottom: 0; }
+strong { color: var(--text); font-weight: 600; }
+.section-eyebrow { font-family: var(--mono); font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--cyan); margin-bottom: 8px; }
+.section-header { padding: 48px 0 36px; border-bottom: 1px solid var(--border); margin-bottom: 36px; }
+
+/* ─── CARDS & CALLOUTS ─── */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 16px; }
+.callout { border-radius: var(--radius); padding: 14px 18px; margin: 18px 0; border-left: 3px solid; font-size: 13.5px; line-height: 1.6; }
+.callout-title { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; display: block; margin-bottom: 6px; }
+.callout.info { background: var(--accent-dim); border-color: var(--accent); }
+.callout.info .callout-title { color: var(--accent); }
+.callout.warn { background: var(--orange-dim); border-color: var(--orange); }
+.callout.warn .callout-title { color: var(--orange); }
+.callout.danger { background: var(--red-dim); border-color: var(--red); }
+.callout.danger .callout-title { color: var(--red); }
+.callout.success { background: var(--green-dim); border-color: var(--green); }
+.callout.success .callout-title { color: var(--green); }
+.callout.cyan { background: var(--cyan-dim); border-color: var(--cyan); }
+.callout.cyan .callout-title { color: var(--cyan); }
+
+/* ─── BADGES ─── */
+.badge { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 3px 9px; border-radius: 20px; border: 1px solid; }
+.badge-blue { background: var(--accent-dim); color: var(--accent); border-color: rgba(88,166,255,0.3); }
+.badge-green { background: var(--green-dim); color: var(--green); border-color: rgba(63,185,80,0.3); }
+.badge-orange { background: var(--orange-dim); color: var(--orange); border-color: rgba(227,179,65,0.3); }
+.badge-red { background: var(--red-dim); color: var(--red); border-color: rgba(248,81,73,0.3); }
+.badge-purple { background: var(--purple-dim); color: var(--purple); border-color: rgba(188,140,255,0.3); }
+.badge-cyan { background: var(--cyan-dim); color: var(--cyan); border-color: rgba(57,210,192,0.3); }
+
+/* ─── BUTTONS ─── */
+.btn { font-family: var(--sans); font-size: 13px; font-weight: 600; padding: 10px 22px; border-radius: 6px; cursor: pointer; transition: all 0.18s; border: 1px solid; display: inline-flex; align-items: center; gap: 7px; text-decoration: none; }
+.btn-primary { background: var(--accent); color: #08090c; border-color: var(--accent); }
+.btn-primary:hover { background: #79b8ff; border-color: #79b8ff; }
+.btn-ghost { background: transparent; color: var(--text-muted); border-color: var(--border2); }
+.btn-ghost:hover { background: var(--surface2); color: var(--text); }
+.btn-green { background: var(--green); color: #08090c; border-color: var(--green); }
+.btn-green:hover { background: #56d364; }
+.btn-cyan { background: var(--cyan); color: #08090c; border-color: var(--cyan); }
+.btn-cyan:hover { background: #5ae0d0; }
+.btn-sm { font-size: 12px; padding: 7px 16px; }
+
+/* ─── TERMINAL ─── */
+.mission-terminal { background: #05080b; border: 1px solid #1e2d3d; border-radius: 10px; overflow: hidden; margin: 24px 0; box-shadow: 0 0 40px rgba(57,210,192,0.05); }
+.terminal-bar { background: #0d1520; border-bottom: 1px solid #1e2d3d; padding: 10px 16px; display: flex; align-items: center; gap: 10px; }
+.terminal-dots { display: flex; gap: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot-r { background: #f85149; } .dot-y { background: #e3b341; } .dot-g { background: #3fb950; }
+.terminal-title { font-family: var(--mono); font-size: 11px; color: var(--text-dim); flex: 1; text-align: center; }
+.terminal-body { padding: 28px 32px; font-family: var(--mono); font-size: 13px; line-height: 1.9; color: #adbac7; }
+.terminal-body .prompt { color: var(--cyan); }
+.terminal-body .cmd { color: var(--text); }
+.terminal-body .output { color: var(--text-muted); }
+.terminal-body .alert-line { color: var(--red); font-weight: 600; }
+.terminal-body .ok-line { color: var(--green); }
+.terminal-body .warn-line { color: var(--orange); }
+.terminal-body .blank { height: 8px; }
+
+.scenario-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin: 20px 0; }
+.scenario-stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; }
+.stat-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
+.stat-value { font-size: 20px; font-weight: 700; color: var(--text); line-height: 1.2; }
+.stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+.mission-objective { display: flex; gap: 14px; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.mission-objective:last-child { border-bottom: none; }
+.obj-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; margin-top: 2px; }
+.obj-body .obj-title { font-weight: 600; font-size: 14px; color: var(--text); margin-bottom: 2px; }
+.obj-body .obj-desc { font-size: 13px; color: var(--text-muted); }
+
+/* ─── CONCEPT TABS ─── */
+.concept-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 28px; overflow-x: auto; scrollbar-width: none; }
+.concept-tab { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-dim); padding: 11px 18px; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; transition: all 0.2s; background: none; border-top: none; border-left: none; border-right: none; }
+.concept-tab:hover { color: var(--text-muted); }
+.concept-tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+.concept-panel { display: none; }
+.concept-panel.active { display: block; animation: fadeIn 0.25s ease; }
+
+/* ─── CODE BLOCKS ─── */
+.code-block {
+  background: #0a0e14;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin: 16px 0;
+}
+.code-header {
+  background: #0d1520;
+  border-bottom: 1px solid var(--border);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.code-filename { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+.code-copy {
+  font-family: var(--mono); font-size: 10px; font-weight: 600; color: var(--text-dim);
+  background: var(--surface2); border: 1px solid var(--border2); border-radius: 4px;
+  padding: 3px 10px; cursor: pointer; transition: all 0.2s;
+}
+.code-copy:hover { color: var(--cyan); border-color: var(--cyan); }
+.code-copy.copied { color: var(--green); border-color: var(--green); }
+.code-body {
+  padding: 18px 20px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: #adbac7;
+  overflow-x: auto;
+  white-space: pre;
+}
+.code-body .kw { color: var(--purple); }
+.code-body .fn { color: var(--cyan); }
+.code-body .str { color: var(--green); }
+.code-body .cmt { color: var(--text-dim); font-style: italic; }
+.code-body .num { color: var(--orange); }
+.code-body .op { color: var(--text-muted); }
+.code-body .var { color: var(--accent); }
+
+/* ─── CHECKPOINT ─── */
+.checkpoint {
+  background: linear-gradient(135deg, rgba(57,210,192,0.06), rgba(88,166,255,0.04));
+  border: 1px solid rgba(57,210,192,0.25);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin: 20px 0;
+}
+.checkpoint-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+}
+.checkpoint-icon {
+  width: 28px; height: 28px; border-radius: 50%; background: var(--cyan-dim);
+  border: 1px solid rgba(57,210,192,0.3); display: flex; align-items: center;
+  justify-content: center; font-size: 14px; flex-shrink: 0;
+}
+.checkpoint-title { font-weight: 700; font-size: 14px; color: var(--cyan); }
+
+/* ─── LAB STEPS ─── */
+.lab-step {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+.lab-step-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+}
+.step-badge {
+  font-family: var(--mono); font-size: 11px; font-weight: 700;
+  width: 28px; height: 28px; border-radius: 6px; background: var(--accent-dim);
+  border: 1px solid rgba(88,166,255,0.3); display: flex; align-items: center;
+  justify-content: center; color: var(--accent); flex-shrink: 0;
+}
+.step-badge.complete { background: var(--green-dim); border-color: rgba(63,185,80,0.3); color: var(--green); }
+.lab-step-header h3 { margin: 0; font-size: 14px; }
+.lab-step-body { padding: 20px; }
+
+/* ─── BENCHMARK TABLE ─── */
+.bench-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 13px;
+}
+.bench-table th {
+  background: var(--surface2);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 10px 14px;
+  text-align: left;
+  border: 1px solid var(--border);
+}
+.bench-table td {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  background: var(--surface);
+}
+.bench-table td.val { font-family: var(--mono); font-weight: 600; color: var(--text); }
+.bench-table tr.highlight td { background: rgba(57,210,192,0.04); }
+.bench-table .better { color: var(--green); }
+.bench-table .worse { color: var(--red); }
+.bench-table .neutral { color: var(--orange); }
+
+/* ─── VISUAL BARS ─── */
+.size-bar-row { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+.size-bar-label { font-family: var(--mono); font-size: 11px; color: var(--text-muted); width: 120px; flex-shrink: 0; text-align: right; }
+.size-bar-track { flex: 1; height: 20px; background: var(--surface2); border-radius: 4px; overflow: hidden; position: relative; }
+.size-bar-fill { height: 100%; border-radius: 4px; transition: width 0.8s ease; display: flex; align-items: center; padding-left: 8px; font-family: var(--mono); font-size: 10px; font-weight: 700; }
+.size-bar-val { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text); width: 80px; }
+
+/* ─── INTERACTIVE MC (reused from Lab 1) ─── */
+.mc-options { display: flex; flex-direction: column; gap: 10px; }
+.mc-option { display: flex; align-items: center; gap: 14px; padding: 13px 16px; border: 1px solid var(--border2); border-radius: 8px; cursor: pointer; transition: all 0.18s; background: var(--surface2); }
+.mc-option:hover { border-color: var(--accent); background: var(--accent-dim); }
+.mc-option.selected { border-color: var(--accent); background: var(--accent-dim); }
+.mc-option.correct { border-color: var(--green); background: var(--green-dim); }
+.mc-option.incorrect { border-color: var(--red); background: var(--red-dim); }
+.mc-letter { font-family: var(--mono); font-size: 12px; font-weight: 700; width: 24px; height: 24px; border-radius: 4px; background: var(--surface); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text-muted); }
+.mc-option.selected .mc-letter { background: var(--accent); border-color: var(--accent); color: #08090c; }
+.mc-option.correct .mc-letter { background: var(--green); border-color: var(--green); color: #08090c; }
+.mc-option.incorrect .mc-letter { background: var(--red); border-color: var(--red); color: white; }
+.mc-text { font-size: 14px; color: var(--text); }
+
+.answer-reveal { display: none; margin-top: 16px; padding: 14px 16px; border-radius: 8px; font-size: 13.5px; line-height: 1.6; border-left: 3px solid; animation: fadeIn 0.3s ease; }
+.answer-reveal.show { display: block; }
+.answer-reveal.correct-reveal { background: var(--green-dim); border-color: var(--green); }
+.answer-reveal.incorrect-reveal { background: rgba(248,81,73,0.08); border-color: var(--red); }
+.reveal-label { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; display: block; margin-bottom: 6px; }
+.correct-reveal .reveal-label { color: var(--green); }
+.incorrect-reveal .reveal-label { color: var(--red); }
+
+/* ─── SIMULATOR TABS ─── */
+.sim-tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 28px; overflow-x: auto; scrollbar-width: none; }
+.sim-tab { font-family: var(--mono); font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--text-dim); padding: 11px 18px; border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap; transition: all 0.2s; background: none; border-top: none; border-left: none; border-right: none; }
+.sim-tab:hover { color: var(--text-muted); }
+.sim-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+.sim-panel { display: none; }
+.sim-panel.active { display: block; animation: fadeIn 0.25s ease; }
+
+/* ─── HYBRID FAILURE SIM ─── */
+.hybrid-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 20px 0; }
+.hybrid-scenario {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.hybrid-scenario:hover { border-color: var(--accent); }
+.hybrid-scenario.active { border-color: var(--orange); box-shadow: 0 0 20px rgba(227,179,65,0.08); }
+.hybrid-scenario-header {
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 700;
+  font-size: 13px;
+  text-align: center;
+}
+.hybrid-scenario-body { padding: 16px; }
+.hybrid-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.hybrid-row:last-child { border-bottom: none; }
+.hybrid-label { color: var(--text-muted); }
+.hybrid-status { font-family: var(--mono); font-size: 11px; font-weight: 700; }
+
+/* ─── PERFORMANCE COMPARISON ─── */
+.perf-scenario { margin: 20px 0; }
+.perf-toggle { display: flex; gap: 8px; margin-bottom: 20px; }
+.perf-btn {
+  padding: 10px 18px; border: 1px solid var(--border2); border-radius: 8px;
+  background: var(--surface2); cursor: pointer; font-family: var(--sans);
+  font-size: 13px; font-weight: 600; color: var(--text-muted); transition: all 0.18s;
+}
+.perf-btn:hover { border-color: var(--accent); }
+.perf-btn.active { border-color: var(--cyan); background: var(--cyan-dim); color: var(--cyan); }
+
+/* ─── COMPLETION ─── */
+.completion-banner { background: linear-gradient(135deg, rgba(63,185,80,0.08), rgba(57,210,192,0.06)); border: 1px solid rgba(63,185,80,0.25); border-radius: 12px; padding: 36px; text-align: center; margin: 32px 0; }
+.completion-banner h2 { font-size: 22px; color: var(--green); margin-bottom: 10px; }
+.completion-banner p { font-size: 14px; color: var(--text-muted); max-width: 560px; margin: 0 auto 20px; }
+.future-hook { background: var(--surface); border: 1px solid var(--border2); border-radius: 8px; padding: 16px 20px; font-style: italic; font-size: 15px; color: var(--cyan); max-width: 600px; margin: 0 auto 20px; line-height: 1.6; }
+
+.section-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 44px; padding-top: 20px; border-top: 1px solid var(--border); gap: 12px; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+/* ─── KEM VISUAL ─── */
+.kem-flow { display: flex; align-items: center; gap: 0; margin: 24px 0; flex-wrap: wrap; justify-content: center; }
+.kem-node { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; text-align: center; min-width: 150px; }
+.kem-node-title { font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 6px; }
+.kem-node-val { font-size: 14px; font-weight: 700; color: var(--text); }
+.kem-node-sub { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+.kem-arrow { font-size: 22px; color: var(--cyan); padding: 0 12px; }
+
+/* ─── LWE VISUAL ─── */
+.lwe-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+.lwe-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+.noise-dot-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; margin: 12px auto; max-width: 200px; }
+.noise-dot { width: 100%; aspect-ratio: 1; border-radius: 50%; transition: all 0.3s; }
+
+/* ─── ANIMATIONS ─── */
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.cursor { display: inline-block; animation: blink 1s step-end infinite; color: var(--cyan); }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 768px) { .hybrid-grid { grid-template-columns: 1fr; } .lwe-grid { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .container { padding: 0 16px 60px; } .scenario-grid { grid-template-columns: repeat(2, 1fr); } .kem-flow { flex-direction: column; } .kem-arrow { transform: rotate(90deg); } }
+@media print { .top-nav, .progress-track, .nav-tab, .btn, .section-footer { display: none !important; } .section-wrap { display: block !important; } body { background: white; color: #111; } }
+</style>
+</head>
+<body>
+
+<div class="progress-track"><div class="progress-fill" id="progressBar"></div></div>
+
+<nav class="top-nav">
+  <div class="nav-inner">
+    <button class="nav-tab active" onclick="showSection(0)" id="tab0"><span class="nav-dot"></span> Mission Brief</button>
+    <button class="nav-tab" onclick="showSection(1)" id="tab1"><span class="nav-dot"></span> Concept Capsule</button>
+    <button class="nav-tab" onclick="showSection(2)" id="tab2"><span class="nav-dot"></span> Hands-On Lab</button>
+    <button class="nav-tab" onclick="showSection(3)" id="tab3"><span class="nav-dot"></span> Simulators</button>
+    <button class="nav-tab" onclick="showSection(4)" id="tab4"><span class="nav-dot"></span> Decision Exercise</button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 0 — MISSION BRIEF
+══════════════════════════════════════════════════ -->
+<div class="section-wrap active" id="section0">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Lab 2 of 5 · Post-Quantum Cryptography</div>
+    <h1>ML-KEM (Kyber): Quantum-Resistant Key Encapsulation</h1>
+    <p style="font-size:15px; max-width:620px; margin-top:10px;">You've identified the threat. Now it's time to deploy the replacement. Today you implement the algorithm NIST chose to replace RSA and ECDH for key exchange.</p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:18px;">
+      <span class="badge badge-cyan">⏱ 2-Hour Session</span>
+      <span class="badge badge-green">✓ Python + OQS Library</span>
+      <span class="badge badge-orange">⚠ Prereq: Lab 1 Complete</span>
+    </div>
+  </div>
+
+  <div class="mission-terminal">
+    <div class="terminal-bar">
+      <div class="terminal-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div>
+      <span class="terminal-title">incident-response — migration-order.sh</span>
+    </div>
+    <div class="terminal-body">
+      <div><span class="prompt">$ </span><span class="cmd">cat /secure/migration-order-001.txt</span></div>
+      <div class="blank"></div>
+      <div class="alert-line">[ PRIORITY ] MIGRATION ORDER — EFFECTIVE IMMEDIATELY</div>
+      <div class="blank"></div>
+      <div class="output">To: Security Engineering Team</div>
+      <div class="output">From: CISO, NovaPay Financial Services</div>
+      <div class="output">Re: PQC Migration — Phase 1: Key Exchange</div>
+      <div class="blank"></div>
+      <div class="output">Following last month's threat intelligence report confirming active harvesting</div>
+      <div class="output">of our payment processing TLS traffic, we are initiating Phase 1 migration.</div>
+      <div class="blank"></div>
+      <div class="warn-line">[ TASK ] Replace RSA-2048 key exchange on payment gateway with ML-KEM (Kyber)</div>
+      <div class="warn-line">[ TASK ] Benchmark performance impact — CFO needs data before production approval</div>
+      <div class="warn-line">[ TASK ] Verify interoperability with existing AES-256 data-at-rest encryption</div>
+      <div class="blank"></div>
+      <div class="output">Transaction volume: 2.3M daily | Latency budget: &lt;50ms per TLS handshake</div>
+      <div class="output">Data classification: PCI-DSS Level 1 | Retention: 7 years minimum</div>
+      <div class="blank"></div>
+      <div class="ok-line">[ INFO ] OQS library approved for evaluation. Production decision pending your report.</div>
+      <div class="blank"></div>
+      <div><span class="prompt">$ </span><span class="cmd">begin-implementation</span><span class="cursor">_</span></div>
+    </div>
+  </div>
+
+  <h2 style="margin-top:32px;">Your Mission Parameters</h2>
+  <div class="scenario-grid">
+    <div class="scenario-stat">
+      <div class="stat-label">Organization</div>
+      <div class="stat-value" style="font-size:16px;">NovaPay</div>
+      <div class="stat-sub">Financial services, PCI-DSS Level 1</div>
+    </div>
+    <div class="scenario-stat">
+      <div class="stat-label">Daily Transactions</div>
+      <div class="stat-value">2.3M</div>
+      <div class="stat-sub">Payment processing volume</div>
+    </div>
+    <div class="scenario-stat">
+      <div class="stat-label">Latency Budget</div>
+      <div class="stat-value" style="color:var(--orange);">&lt;50ms</div>
+      <div class="stat-sub">Per TLS handshake</div>
+    </div>
+    <div class="scenario-stat">
+      <div class="stat-label">Current Algorithm</div>
+      <div class="stat-value" style="color:var(--red);">RSA-2048</div>
+      <div class="stat-sub">Key exchange — VULNERABLE</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:28px;">
+    <h2 style="margin-bottom:18px;">Today's Objectives</h2>
+    <div class="mission-objective">
+      <div class="obj-icon" style="background:var(--cyan-dim); color:var(--cyan);">🔑</div>
+      <div class="obj-body">
+        <div class="obj-title">Understand Key Encapsulation</div>
+        <div class="obj-desc">Learn what a KEM is, how it differs from key exchange, and why lattice-based cryptography resists quantum attacks — no advanced math required.</div>
+      </div>
+    </div>
+    <div class="mission-objective">
+      <div class="obj-icon" style="background:var(--accent-dim); color:var(--accent);">💻</div>
+      <div class="obj-body">
+        <div class="obj-title">Implement ML-KEM (Kyber)</div>
+        <div class="obj-desc">Write Python code to generate keys, encapsulate shared secrets, and decapsulate — then do the same with RSA for comparison.</div>
+      </div>
+    </div>
+    <div class="mission-objective">
+      <div class="obj-icon" style="background:var(--orange-dim); color:var(--orange);">📊</div>
+      <div class="obj-body">
+        <div class="obj-title">Benchmark Everything</div>
+        <div class="obj-desc">Measure key sizes, ciphertext sizes, and operation speeds. Collect real data to compare RSA-2048 against Kyber-768.</div>
+      </div>
+    </div>
+    <div class="mission-objective">
+      <div class="obj-icon" style="background:var(--green-dim); color:var(--green);">🧠</div>
+      <div class="obj-body">
+        <div class="obj-title">Make the Deployment Decision</div>
+        <div class="obj-desc">Based on your measurements, determine whether ML-KEM's performance overhead is operationally acceptable for NovaPay's payment gateway.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <span style="font-size:12px; color:var(--text-dim); font-family:var(--mono);">SECTION 1 OF 5</span>
+    <button class="btn btn-primary" onclick="showSection(1)">Start Concept Capsule →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 1 — CONCEPT CAPSULE
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section1">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">10–15 Minute Concept Overview</div>
+    <h1>How Kyber Works — Without the Math</h1>
+    <p style="font-size:15px; max-width:560px; margin-top:8px;">You don't need to prove theorems to deploy cryptography. You need the right mental models. Here's what Kyber actually does and why it's quantum-resistant.</p>
+  </div>
+
+  <div class="concept-tabs">
+    <button class="concept-tab active" onclick="showConcept('c1',this)">1. What is a KEM?</button>
+    <button class="concept-tab" onclick="showConcept('c2',this)">2. Lattice Intuition</button>
+    <button class="concept-tab" onclick="showConcept('c3',this)">3. Learning With Errors</button>
+    <button class="concept-tab" onclick="showConcept('c4',this)">4. Kyber Internals</button>
+  </div>
+
+  <!-- C1: What is a KEM? -->
+  <div class="concept-panel active" id="c1">
+    <h2>Key Encapsulation Mechanism (KEM)</h2>
+    <p>Before two parties can communicate securely, they need a <strong>shared secret key</strong>. RSA solved this by encrypting a key directly. A KEM solves it differently — and more cleanly.</p>
+
+    <div class="kem-flow">
+      <div class="kem-node">
+        <div class="kem-node-title">Step 1: KeyGen</div>
+        <div class="kem-node-val">🔑 Alice</div>
+        <div class="kem-node-sub">Generates public key + secret key</div>
+      </div>
+      <div class="kem-arrow">→</div>
+      <div class="kem-node" style="border-color: rgba(57,210,192,0.3);">
+        <div class="kem-node-title">Step 2: Encapsulate</div>
+        <div class="kem-node-val">📦 Bob</div>
+        <div class="kem-node-sub">Uses Alice's public key to create:<br>ciphertext + shared secret</div>
+      </div>
+      <div class="kem-arrow">→</div>
+      <div class="kem-node">
+        <div class="kem-node-title">Step 3: Decapsulate</div>
+        <div class="kem-node-val">🔓 Alice</div>
+        <div class="kem-node-sub">Uses secret key on ciphertext to<br>recover the same shared secret</div>
+      </div>
+    </div>
+
+    <div class="callout info">
+      <span class="callout-title">🔑 KEM vs. Key Exchange — What's the Difference?</span>
+      In traditional Diffie-Hellman key exchange, both parties contribute to the shared secret. In a KEM, one party (Bob) generates the shared secret and "encapsulates" it for the other (Alice). The result is the same — both parties end up with an identical shared key for symmetric encryption — but the mechanism is simpler and better suited to lattice-based constructions.
+    </div>
+
+    <h3>Why Not Just Encrypt the Key With RSA?</h3>
+    <p>RSA key transport (encrypting a session key directly with RSA) works, but it's being replaced for two reasons. First, RSA is broken by quantum computers. Second, KEM designs provide <strong>IND-CCA2 security</strong> (resistance to chosen-ciphertext attacks) more naturally than naive RSA encryption. ML-KEM gives you both quantum resistance and better security properties.</p>
+
+    <div class="callout cyan">
+      <span class="callout-title">📌 What You'll Implement Today</span>
+      In this lab, you'll call three functions: <strong>KeyGen()</strong> → generates the key pair, <strong>Encaps(pk)</strong> → produces ciphertext + shared secret, <strong>Decaps(sk, ct)</strong> → recovers the shared secret. That's it. Three function calls to replace RSA key exchange.
+    </div>
+  </div>
+
+  <!-- C2: Lattice Intuition -->
+  <div class="concept-panel" id="c2">
+    <h2>Lattice-Based Cryptography — The Intuition</h2>
+    <p>Kyber's security is based on problems involving <strong>lattices</strong> — regular grid-like structures in high-dimensional space. Here's the intuition without the linear algebra.</p>
+
+    <div class="card">
+      <h3 style="margin-top:0;">Think of it like a city grid.</h3>
+      <p>Imagine a perfect grid of streets in a 2D city. Given any coordinate, it's easy to find the nearest intersection. Now imagine that grid exists in <strong>500+ dimensions</strong>, and instead of nice right angles, the grid lines are skewed at strange angles. Finding the nearest lattice point in this warped, high-dimensional space is extraordinarily hard — even for quantum computers.</p>
+    </div>
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin:20px 0;">
+      <div class="card" style="border-color:rgba(248,81,73,0.3);">
+        <div style="font-family:var(--mono); font-size:10px; color:var(--red); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px;">❌ RSA's Problem (broken by quantum)</div>
+        <p style="font-size:13px;"><strong>Factoring</strong>: Given N = P × Q, find P and Q. This has deep mathematical structure that Shor's algorithm exploits — specifically, the periodicity of modular exponentiation.</p>
+      </div>
+      <div class="card" style="border-color:rgba(63,185,80,0.3);">
+        <div style="font-family:var(--mono); font-size:10px; color:var(--green); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px;">✓ Kyber's Problem (quantum-resistant)</div>
+        <p style="font-size:13px;"><strong>Shortest Vector</strong>: Find the shortest non-zero vector in a high-dimensional lattice. No mathematical structure for quantum algorithms to exploit. Brute-force search is the only option — and it's exponential.</p>
+      </div>
+    </div>
+
+    <div class="callout success">
+      <span class="callout-title">🌾 Remember the Haystack from Lab 1</span>
+      RSA is a combination lock — quantum computers have the master key. Lattice problems are a haystack where everything looks like hay. No quantum shortcut exists. At 500+ dimensions, even quantum brute-force takes longer than the age of the universe.
+    </div>
+  </div>
+
+  <!-- C3: Learning With Errors -->
+  <div class="concept-panel" id="c3">
+    <h2>Learning With Errors (LWE) — Kyber's Foundation</h2>
+    <p>Kyber is specifically built on the <strong>Module Learning With Errors (MLWE)</strong> problem. Here's the intuition.</p>
+
+    <div class="lwe-grid">
+      <div class="lwe-panel">
+        <h3 style="margin-top:0; color:var(--green);">Without Noise: Easy</h3>
+        <p style="font-size:13px;">Imagine a system of linear equations: <strong>b = A·s</strong>. Given A (public) and b (output), finding the secret s is straightforward — it's just solving a system of equations. Any computer can do this instantly.</p>
+        <div class="noise-dot-grid" id="cleanGrid"></div>
+        <p style="font-size:12px; text-align:center; color:var(--text-dim);">Clean outputs: pattern is detectable</p>
+      </div>
+      <div class="lwe-panel">
+        <h3 style="margin-top:0; color:var(--red);">With Noise: Impossibly Hard</h3>
+        <p style="font-size:13px;">Now add small random noise: <strong>b = A·s + e</strong>. The noise "e" is tiny, but it makes the system unsolvable. You can't distinguish the noisy output from random garbage — and neither can a quantum computer.</p>
+        <div class="noise-dot-grid" id="noisyGrid"></div>
+        <p style="font-size:12px; text-align:center; color:var(--text-dim);">Noisy outputs: pattern destroyed</p>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <span class="callout-title">⚠ The Noise Is the Security</span>
+      The entire security of Kyber comes from that small amount of noise. Without it, the problem is trivially solvable. With it, no known algorithm (classical or quantum) can efficiently recover the secret. The noise must be small enough that legitimate parties can still "round off" the errors to recover the shared secret, but large enough to prevent adversaries from doing so.
+    </div>
+
+    <div class="callout info">
+      <span class="callout-title">🎯 Why "Learning" With Errors?</span>
+      The name comes from machine learning. Imagine trying to learn a hidden rule from data — but every data point has a random error mixed in. If the errors are large enough, no learning algorithm can figure out the rule. That's the fundamental hardness assumption Kyber relies on.
+    </div>
+  </div>
+
+  <!-- C4: Kyber Internals -->
+  <div class="concept-panel" id="c4">
+    <h2>Inside ML-KEM (Kyber) — What You Need to Know</h2>
+    <p>NIST standardized three security levels of ML-KEM. The number corresponds to the lattice dimension used.</p>
+
+    <div class="scenario-grid" style="margin:16px 0;">
+      <div class="scenario-stat" style="border-color:rgba(88,166,255,0.3);">
+        <div class="stat-label">ML-KEM-512</div>
+        <div class="stat-value" style="font-size:16px;">~AES-128</div>
+        <div class="stat-sub">Smallest keys, fastest ops</div>
+      </div>
+      <div class="scenario-stat" style="border-color:rgba(57,210,192,0.3);">
+        <div class="stat-label">ML-KEM-768</div>
+        <div class="stat-value" style="font-size:16px; color:var(--cyan);">~AES-192</div>
+        <div class="stat-sub">Recommended default</div>
+      </div>
+      <div class="scenario-stat" style="border-color:rgba(188,140,255,0.3);">
+        <div class="stat-label">ML-KEM-1024</div>
+        <div class="stat-value" style="font-size:16px;">~AES-256</div>
+        <div class="stat-sub">Maximum security</div>
+      </div>
+    </div>
+
+    <h3>Key and Ciphertext Sizes</h3>
+    <div class="bench-table" style="margin:16px 0;">
+      <table class="bench-table">
+        <tr><th>Parameter</th><th>RSA-2048</th><th>ML-KEM-768 (Kyber)</th><th>Change</th></tr>
+        <tr><td>Public Key</td><td class="val">256 bytes</td><td class="val">1,184 bytes</td><td class="val worse">+4.6×</td></tr>
+        <tr><td>Secret Key</td><td class="val">1,024 bytes</td><td class="val">2,400 bytes</td><td class="val worse">+2.3×</td></tr>
+        <tr><td>Ciphertext</td><td class="val">256 bytes</td><td class="val">1,088 bytes</td><td class="val worse">+4.25×</td></tr>
+        <tr><td>Shared Secret</td><td class="val">32 bytes</td><td class="val">32 bytes</td><td class="val better">Same</td></tr>
+        <tr class="highlight"><td>KeyGen Speed</td><td class="val">~2–8 ms</td><td class="val">~0.1–0.3 ms</td><td class="val better">10–30× faster</td></tr>
+        <tr class="highlight"><td>Encaps/Encrypt</td><td class="val">~0.1–0.5 ms</td><td class="val">~0.1–0.3 ms</td><td class="val better">Comparable</td></tr>
+        <tr class="highlight"><td>Decaps/Decrypt</td><td class="val">~2–10 ms</td><td class="val">~0.1–0.3 ms</td><td class="val better">10–30× faster</td></tr>
+      </table>
+    </div>
+
+    <div class="callout success">
+      <span class="callout-title">📊 The Surprise: Kyber is Often FASTER</span>
+      The keys and ciphertexts are bigger, but the operations themselves are typically faster than RSA — sometimes dramatically so. Kyber's key generation is 10–30× faster because lattice operations use simple polynomial arithmetic, while RSA requires generating large primes. The tradeoff is <strong>bandwidth for speed</strong>, which is usually favorable for modern networks.
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(0)">← Mission Brief</button>
+    <button class="btn btn-primary" onclick="showSection(2)">Start Hands-On Lab →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 2 — HANDS-ON LAB
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section2">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Core Implementation Activity</div>
+    <h1>Hands-On Lab: Implementing ML-KEM</h1>
+    <p style="font-size:15px; max-width:600px; margin-top:8px;">Follow each step in your terminal. Run the code, verify the outputs at each checkpoint, and collect benchmark data. You'll use this data in the Decision Exercise.</p>
+  </div>
+
+  <div class="callout warn" style="margin-top:0;">
+    <span class="callout-title">⚠ Prerequisites</span>
+    You need Python 3.8+ and the <code style="color:var(--text);">liboqs-python</code> library installed. If you haven't set up yet, run: <code style="color:var(--text);">pip install liboqs-python</code>. You also need the <code style="color:var(--text);">cryptography</code> library for RSA comparison: <code style="color:var(--text);">pip install cryptography</code>.
+  </div>
+
+  <!-- STEP 1: Setup & KeyGen -->
+  <div class="lab-step">
+    <div class="lab-step-header" onclick="toggleStep('step1')">
+      <div class="step-badge" id="badge-step1">1</div>
+      <h3>Step 1: Key Generation — Kyber vs RSA</h3>
+    </div>
+    <div class="lab-step-body" id="body-step1">
+      <p>Start by generating key pairs for both algorithms. Pay attention to the key sizes — this is the first real data point you'll collect.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-filename">step1_keygen.py</span>
+          <button class="code-copy" onclick="copyCode(this, 'code1')">Copy</button>
+        </div>
+        <div class="code-body" id="code1"><span class="kw">import</span> oqs
+<span class="kw">import</span> time
+<span class="kw">from</span> cryptography.hazmat.primitives.asymmetric <span class="kw">import</span> rsa, padding
+<span class="kw">from</span> cryptography.hazmat.primitives <span class="kw">import</span> hashes, serialization
+
+<span class="cmt"># ──── ML-KEM (Kyber-768) Key Generation ────</span>
+<span class="fn">print</span>(<span class="str">"=== ML-KEM-768 (Kyber) Key Generation ==="</span>)
+kem = oqs.<span class="fn">KeyEncapsulation</span>(<span class="str">"ML-KEM-768"</span>)
+
+start = time.<span class="fn">perf_counter</span>()
+public_key_kyber = kem.<span class="fn">generate_keypair</span>()
+kyber_keygen_time = (time.<span class="fn">perf_counter</span>() - start) * <span class="num">1000</span>
+
+<span class="fn">print</span>(<span class="str">f"Public key size:  {len(public_key_kyber)} bytes"</span>)
+<span class="fn">print</span>(<span class="str">f"Secret key size:  {kem.export_secret_key().__len__()} bytes"</span>)
+<span class="fn">print</span>(<span class="str">f"KeyGen time:      {kyber_keygen_time:.3f} ms"</span>)
+
+<span class="cmt"># ──── RSA-2048 Key Generation ────</span>
+<span class="fn">print</span>(<span class="str">"\n=== RSA-2048 Key Generation ==="</span>)
+start = time.<span class="fn">perf_counter</span>()
+rsa_private = rsa.<span class="fn">generate_private_key</span>(
+    public_exponent=<span class="num">65537</span>,
+    key_size=<span class="num">2048</span>
+)
+rsa_keygen_time = (time.<span class="fn">perf_counter</span>() - start) * <span class="num">1000</span>
+
+rsa_public = rsa_private.<span class="fn">public_key</span>()
+rsa_pub_bytes = rsa_public.<span class="fn">public_bytes</span>(
+    serialization.Encoding.DER,
+    serialization.PublicFormat.SubjectPublicKeyInfo
+)
+rsa_priv_bytes = rsa_private.<span class="fn">private_bytes</span>(
+    serialization.Encoding.DER,
+    serialization.PrivateFormat.PKCS8,
+    serialization.NoEncryption()
+)
+
+<span class="fn">print</span>(<span class="str">f"Public key size:  {len(rsa_pub_bytes)} bytes"</span>)
+<span class="fn">print</span>(<span class="str">f"Private key size: {len(rsa_priv_bytes)} bytes"</span>)
+<span class="fn">print</span>(<span class="str">f"KeyGen time:      {rsa_keygen_time:.3f} ms"</span>)</div>
+      </div>
+
+      <div class="checkpoint">
+        <div class="checkpoint-header">
+          <div class="checkpoint-icon">✓</div>
+          <div class="checkpoint-title">Checkpoint 1: Verify Key Sizes</div>
+        </div>
+        <p style="font-size:13px;">After running the code, your Kyber public key should be <strong>1,184 bytes</strong> and your RSA-2048 public key should be approximately <strong>294 bytes</strong> (DER encoded). Kyber KeyGen should be significantly faster than RSA KeyGen.</p>
+        <div class="mc-options" style="margin-top:12px;">
+          <div class="mc-option" onclick="selectCheckpoint('cp1',this,'A')"><span class="mc-letter">A</span><span class="mc-text">Confirmed — Kyber key is ~1,184 bytes, RSA is ~294 bytes, Kyber KeyGen was faster</span></div>
+          <div class="mc-option" onclick="selectCheckpoint('cp1',this,'B')"><span class="mc-letter">B</span><span class="mc-text">Sizes match but RSA KeyGen was faster than Kyber</span></div>
+          <div class="mc-option" onclick="selectCheckpoint('cp1',this,'C')"><span class="mc-letter">C</span><span class="mc-text">Got an error — need to troubleshoot</span></div>
+        </div>
+        <div class="answer-reveal" id="reveal-cp1"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Encapsulation/Decapsulation -->
+  <div class="lab-step">
+    <div class="lab-step-header" onclick="toggleStep('step2')">
+      <div class="step-badge" id="badge-step2">2</div>
+      <h3>Step 2: Encapsulation & Decapsulation</h3>
+    </div>
+    <div class="lab-step-body" id="body-step2">
+      <p>Now perform the core KEM operations: encapsulate (create a shared secret) and decapsulate (recover it). Compare with RSA key transport.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-filename">step2_encaps.py</span>
+          <button class="code-copy" onclick="copyCode(this, 'code2')">Copy</button>
+        </div>
+        <div class="code-body" id="code2"><span class="cmt"># ──── ML-KEM Encapsulation & Decapsulation ────</span>
+<span class="fn">print</span>(<span class="str">"=== ML-KEM-768 Encapsulate / Decapsulate ==="</span>)
+kem = oqs.<span class="fn">KeyEncapsulation</span>(<span class="str">"ML-KEM-768"</span>)
+public_key = kem.<span class="fn">generate_keypair</span>()
+
+<span class="cmt"># Encapsulate: Bob creates shared secret + ciphertext</span>
+start = time.<span class="fn">perf_counter</span>()
+ciphertext, shared_secret_enc = kem.<span class="fn">encap_secret</span>(public_key)
+kyber_encaps_time = (time.<span class="fn">perf_counter</span>() - start) * <span class="num">1000</span>
+
+<span class="fn">print</span>(<span class="str">f"Ciphertext size:    {len(ciphertext)} bytes"</span>)
+<span class="fn">print</span>(<span class="str">f"Shared secret size: {len(shared_secret_enc)} bytes"</span>)
+<span class="fn">print</span>(<span class="str">f"Encaps time:        {kyber_encaps_time:.3f} ms"</span>)
+
+<span class="cmt"># Decapsulate: Alice recovers shared secret</span>
+start = time.<span class="fn">perf_counter</span>()
+shared_secret_dec = kem.<span class="fn">decap_secret</span>(ciphertext)
+kyber_decaps_time = (time.<span class="fn">perf_counter</span>() - start) * <span class="num">1000</span>
+
+<span class="fn">print</span>(<span class="str">f"Decaps time:        {kyber_decaps_time:.3f} ms"</span>)
+<span class="fn">print</span>(<span class="str">f"Secrets match:      {shared_secret_enc == shared_secret_dec}"</span>)
+<span class="fn">print</span>(<span class="str">f"Shared secret (hex): {shared_secret_enc.hex()[:64]}..."</span>)
+
+<span class="cmt"># ──── RSA Key Transport (for comparison) ────</span>
+<span class="fn">print</span>(<span class="str">"\n=== RSA-2048 Key Transport ==="</span>)
+<span class="kw">import</span> os
+session_key = os.<span class="fn">urandom</span>(<span class="num">32</span>)  <span class="cmt"># 256-bit session key</span>
+
+start = time.<span class="fn">perf_counter</span>()
+rsa_ciphertext = rsa_public.<span class="fn">encrypt</span>(
+    session_key,
+    padding.<span class="fn">OAEP</span>(
+        mgf=padding.<span class="fn">MGF1</span>(algorithm=hashes.<span class="fn">SHA256</span>()),
+        algorithm=hashes.<span class="fn">SHA256</span>(),
+        label=<span class="kw">None</span>
+    )
+)
+rsa_encrypt_time = (time.<span class="fn">perf_counter</span>() - start) * <span class="num">1000</span>
+
+start = time.<span class="fn">perf_counter</span>()
+recovered_key = rsa_private.<span class="fn">decrypt</span>(
+    rsa_ciphertext,
+    padding.<span class="fn">OAEP</span>(
+        mgf=padding.<span class="fn">MGF1</span>(algorithm=hashes.<span class="fn">SHA256</span>()),
+        algorithm=hashes.<span class="fn">SHA256</span>(),
+        label=<span class="kw">None</span>
+    )
+)
+rsa_decrypt_time = (time.<span class="fn">perf_counter</span>() - start) * <span class="num">1000</span>
+
+<span class="fn">print</span>(<span class="str">f"RSA ciphertext size: {len(rsa_ciphertext)} bytes"</span>)
+<span class="fn">print</span>(<span class="str">f"Encrypt time:        {rsa_encrypt_time:.3f} ms"</span>)
+<span class="fn">print</span>(<span class="str">f"Decrypt time:        {rsa_decrypt_time:.3f} ms"</span>)
+<span class="fn">print</span>(<span class="str">f"Keys match:          {session_key == recovered_key}"</span>)</div>
+      </div>
+
+      <div class="checkpoint">
+        <div class="checkpoint-header">
+          <div class="checkpoint-icon">✓</div>
+          <div class="checkpoint-title">Checkpoint 2: Verify Shared Secret Match</div>
+        </div>
+        <p style="font-size:13px;">The critical verification: <code style="color:var(--text);">shared_secret_enc == shared_secret_dec</code> must be <strong>True</strong>. Both parties derived the same 32-byte shared secret. The RSA session key recovery must also match.</p>
+        <div class="mc-options" style="margin-top:12px;">
+          <div class="mc-option" onclick="selectCheckpoint('cp2',this,'A')"><span class="mc-letter">A</span><span class="mc-text">Both verified True — Kyber and RSA shared secrets match their originals</span></div>
+          <div class="mc-option" onclick="selectCheckpoint('cp2',this,'B')"><span class="mc-letter">B</span><span class="mc-text">Kyber matched but RSA did not</span></div>
+          <div class="mc-option" onclick="selectCheckpoint('cp2',this,'C')"><span class="mc-letter">C</span><span class="mc-text">Got an error or mismatch — need help</span></div>
+        </div>
+        <div class="answer-reveal" id="reveal-cp2"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Benchmarking -->
+  <div class="lab-step">
+    <div class="lab-step-header" onclick="toggleStep('step3')">
+      <div class="step-badge" id="badge-step3">3</div>
+      <h3>Step 3: Full Benchmark Suite</h3>
+    </div>
+    <div class="lab-step-body" id="body-step3">
+      <p>Run 100 iterations of each operation to get reliable timing data. This is the data NovaPay's CFO needs to approve the migration.</p>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-filename">step3_benchmark.py</span>
+          <button class="code-copy" onclick="copyCode(this, 'code3')">Copy</button>
+        </div>
+        <div class="code-body" id="code3"><span class="kw">import</span> oqs, time, os, statistics
+<span class="kw">from</span> cryptography.hazmat.primitives.asymmetric <span class="kw">import</span> rsa, padding
+<span class="kw">from</span> cryptography.hazmat.primitives <span class="kw">import</span> hashes
+
+ITERATIONS = <span class="num">100</span>
+
+<span class="kw">def</span> <span class="fn">benchmark_kyber</span>():
+    keygen_times, encaps_times, decaps_times = [], [], []
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(ITERATIONS):
+        kem = oqs.<span class="fn">KeyEncapsulation</span>(<span class="str">"ML-KEM-768"</span>)
+        t = time.<span class="fn">perf_counter</span>()
+        pk = kem.<span class="fn">generate_keypair</span>()
+        keygen_times.<span class="fn">append</span>((time.<span class="fn">perf_counter</span>() - t) * <span class="num">1000</span>)
+
+        t = time.<span class="fn">perf_counter</span>()
+        ct, ss = kem.<span class="fn">encap_secret</span>(pk)
+        encaps_times.<span class="fn">append</span>((time.<span class="fn">perf_counter</span>() - t) * <span class="num">1000</span>)
+
+        t = time.<span class="fn">perf_counter</span>()
+        kem.<span class="fn">decap_secret</span>(ct)
+        decaps_times.<span class="fn">append</span>((time.<span class="fn">perf_counter</span>() - t) * <span class="num">1000</span>)
+
+    <span class="kw">return</span> {
+        <span class="str">'keygen'</span>: statistics.<span class="fn">median</span>(keygen_times),
+        <span class="str">'encaps'</span>: statistics.<span class="fn">median</span>(encaps_times),
+        <span class="str">'decaps'</span>: statistics.<span class="fn">median</span>(decaps_times),
+        <span class="str">'pk_size'</span>: <span class="fn">len</span>(pk),
+        <span class="str">'ct_size'</span>: <span class="fn">len</span>(ct),
+        <span class="str">'ss_size'</span>: <span class="fn">len</span>(ss)
+    }
+
+<span class="kw">def</span> <span class="fn">benchmark_rsa</span>():
+    keygen_times, enc_times, dec_times = [], [], []
+    <span class="kw">for</span> _ <span class="kw">in</span> <span class="fn">range</span>(ITERATIONS):
+        t = time.<span class="fn">perf_counter</span>()
+        priv = rsa.<span class="fn">generate_private_key</span>(<span class="num">65537</span>, <span class="num">2048</span>)
+        keygen_times.<span class="fn">append</span>((time.<span class="fn">perf_counter</span>() - t) * <span class="num">1000</span>)
+        pub = priv.<span class="fn">public_key</span>()
+        key = os.<span class="fn">urandom</span>(<span class="num">32</span>)
+
+        t = time.<span class="fn">perf_counter</span>()
+        ct = pub.<span class="fn">encrypt</span>(key, padding.<span class="fn">OAEP</span>(
+            padding.<span class="fn">MGF1</span>(hashes.<span class="fn">SHA256</span>()), hashes.<span class="fn">SHA256</span>(), <span class="kw">None</span>))
+        enc_times.<span class="fn">append</span>((time.<span class="fn">perf_counter</span>() - t) * <span class="num">1000</span>)
+
+        t = time.<span class="fn">perf_counter</span>()
+        priv.<span class="fn">decrypt</span>(ct, padding.<span class="fn">OAEP</span>(
+            padding.<span class="fn">MGF1</span>(hashes.<span class="fn">SHA256</span>()), hashes.<span class="fn">SHA256</span>(), <span class="kw">None</span>))
+        dec_times.<span class="fn">append</span>((time.<span class="fn">perf_counter</span>() - t) * <span class="num">1000</span>)
+
+    <span class="kw">return</span> {
+        <span class="str">'keygen'</span>: statistics.<span class="fn">median</span>(keygen_times),
+        <span class="str">'encrypt'</span>: statistics.<span class="fn">median</span>(enc_times),
+        <span class="str">'decrypt'</span>: statistics.<span class="fn">median</span>(dec_times),
+        <span class="str">'ct_size'</span>: <span class="fn">len</span>(ct)
+    }
+
+k = <span class="fn">benchmark_kyber</span>()
+r = <span class="fn">benchmark_rsa</span>()
+
+<span class="fn">print</span>(<span class="str">f"\n{'Metric':<22} {'RSA-2048':>12} {'Kyber-768':>12} {'Winner':>10}"</span>)
+<span class="fn">print</span>(<span class="str">"─"</span> * <span class="num">58</span>)
+<span class="fn">print</span>(<span class="str">f"{'KeyGen (ms)':<22} {r['keygen']:>11.3f} {k['keygen']:>11.3f} {'Kyber' if k['keygen'] < r['keygen'] else 'RSA':>10}"</span>)
+<span class="fn">print</span>(<span class="str">f"{'Encaps/Encrypt (ms)':<22} {r['encrypt']:>11.3f} {k['encaps']:>11.3f} {'Kyber' if k['encaps'] < r['encrypt'] else 'RSA':>10}"</span>)
+<span class="fn">print</span>(<span class="str">f"{'Decaps/Decrypt (ms)':<22} {r['decrypt']:>11.3f} {k['decaps']:>11.3f} {'Kyber' if k['decaps'] < r['decrypt'] else 'RSA':>10}"</span>)
+<span class="fn">print</span>(<span class="str">f"{'Public Key (bytes)':<22} {'~294':>12} {k['pk_size']:>12}"</span>)
+<span class="fn">print</span>(<span class="str">f"{'Ciphertext (bytes)':<22} {r['ct_size']:>12} {k['ct_size']:>12}"</span>)
+<span class="fn">print</span>(<span class="str">f"{'Shared Secret (bytes)':<22} {'32':>12} {k['ss_size']:>12}"</span>)</div>
+      </div>
+
+      <div class="checkpoint">
+        <div class="checkpoint-header">
+          <div class="checkpoint-icon">✓</div>
+          <div class="checkpoint-title">Checkpoint 3: Record Your Benchmark Results</div>
+        </div>
+        <p style="font-size:13px;">Which algorithm won each category in your benchmark? Select the pattern that matches your results:</p>
+        <div class="mc-options" style="margin-top:12px;">
+          <div class="mc-option" onclick="selectCheckpoint('cp3',this,'A')"><span class="mc-letter">A</span><span class="mc-text">Kyber won KeyGen, Encaps, and Decaps speed — but RSA had smaller keys/ciphertext</span></div>
+          <div class="mc-option" onclick="selectCheckpoint('cp3',this,'B')"><span class="mc-letter">B</span><span class="mc-text">RSA won all speed categories and had smaller sizes</span></div>
+          <div class="mc-option" onclick="selectCheckpoint('cp3',this,'C')"><span class="mc-letter">C</span><span class="mc-text">Results were mixed — Kyber won some speed tests, RSA won others</span></div>
+        </div>
+        <div class="answer-reveal" id="reveal-cp3"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout success" style="margin-top:8px;">
+    <span class="callout-title">🎉 Lab Implementation Complete</span>
+    You've successfully implemented ML-KEM key encapsulation, compared it against RSA-2048, and collected benchmark data. Proceed to the Simulators to visualize your results and explore hybrid failure modes.
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(1)">← Concept Capsule</button>
+    <button class="btn btn-primary" onclick="showSection(3)">Continue to Simulators →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 3 — SIMULATORS
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section3">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Interactive Visualization</div>
+    <h1>Performance Comparison & Hybrid Failure Simulation</h1>
+    <p style="font-size:15px; max-width:600px; margin-top:8px;">Visualize the tradeoffs between RSA and Kyber, then explore what happens when one component of a hybrid system breaks.</p>
+  </div>
+
+  <div class="sim-tabs">
+    <button class="sim-tab active" onclick="showSim('perf',this)">📊 Performance Comparison</button>
+    <button class="sim-tab" onclick="showSim('hybrid',this)">🔀 Hybrid Failure Simulation</button>
+  </div>
+
+  <!-- PERFORMANCE COMPARISON -->
+  <div class="sim-panel active" id="sim-perf">
+    <p>Select a workload scenario to see how RSA-2048 and ML-KEM-768 compare at NovaPay's scale. These projections are based on typical benchmark data.</p>
+
+    <div class="perf-toggle">
+      <button class="perf-btn active" onclick="showPerfScenario('single',this)">Single Operation</button>
+      <button class="perf-btn" onclick="showPerfScenario('handshake',this)">TLS Handshake</button>
+      <button class="perf-btn" onclick="showPerfScenario('daily',this)">2.3M Daily Transactions</button>
+    </div>
+
+    <div id="perf-display">
+      <!-- Filled by JS -->
+    </div>
+
+    <div class="callout info" style="margin-top:20px;">
+      <span class="callout-title">💡 Key Insight</span>
+      <span id="perf-insight">For a single operation, both algorithms complete well under 1ms. The performance difference is negligible for individual requests.</span>
+    </div>
+  </div>
+
+  <!-- HYBRID FAILURE SIMULATION -->
+  <div class="sim-panel" id="sim-hybrid">
+    <p>A hybrid system combines classical (X25519) and post-quantum (Kyber) key exchange. Click each scenario to understand why hybrids are recommended during the migration period.</p>
+
+    <div class="hybrid-grid">
+      <div class="hybrid-scenario active" onclick="showHybridScenario(1,this)">
+        <div class="hybrid-scenario-header" style="color:var(--red);">Scenario 1: Classical Breaks</div>
+        <div class="hybrid-scenario-body">
+          <div class="hybrid-row"><span class="hybrid-label">X25519</span><span class="hybrid-status" style="color:var(--red);">⚠ BROKEN</span></div>
+          <div class="hybrid-row"><span class="hybrid-label">ML-KEM</span><span class="hybrid-status" style="color:var(--green);">✓ SECURE</span></div>
+          <div class="hybrid-row"><span class="hybrid-label">Hybrid</span><span class="hybrid-status" style="color:var(--green);">✓ PROTECTED</span></div>
+        </div>
+      </div>
+      <div class="hybrid-scenario" onclick="showHybridScenario(2,this)">
+        <div class="hybrid-scenario-header" style="color:var(--orange);">Scenario 2: PQC Has Flaw</div>
+        <div class="hybrid-scenario-body">
+          <div class="hybrid-row"><span class="hybrid-label">X25519</span><span class="hybrid-status" style="color:var(--green);">✓ SECURE</span></div>
+          <div class="hybrid-row"><span class="hybrid-label">ML-KEM</span><span class="hybrid-status" style="color:var(--red);">⚠ BROKEN</span></div>
+          <div class="hybrid-row"><span class="hybrid-label">Hybrid</span><span class="hybrid-status" style="color:var(--green);">✓ PROTECTED</span></div>
+        </div>
+      </div>
+      <div class="hybrid-scenario" onclick="showHybridScenario(3,this)">
+        <div class="hybrid-scenario-header" style="color:var(--green);">Scenario 3: Both Needed</div>
+        <div class="hybrid-scenario-body">
+          <div class="hybrid-row"><span class="hybrid-label">X25519</span><span class="hybrid-status" style="color:var(--red);">⚠ BROKEN</span></div>
+          <div class="hybrid-row"><span class="hybrid-label">ML-KEM</span><span class="hybrid-status" style="color:var(--red);">⚠ BROKEN</span></div>
+          <div class="hybrid-row"><span class="hybrid-label">Hybrid</span><span class="hybrid-status" style="color:var(--red);">⚠ COMPROMISED</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="hybridExplanation">
+      <h3 style="margin-top:0; color:var(--red);">Scenario 1: Quantum Computer Breaks X25519</h3>
+      <p>A cryptographically relevant quantum computer arrives and breaks X25519 (Shor's algorithm on the ECDLP). In a pure-classical system, this is catastrophic — all traffic is exposed. But in a hybrid system, the attacker also needs to break ML-KEM, which requires solving the lattice problem. <strong>The hybrid holds because the attacker must break BOTH components simultaneously.</strong></p>
+      <div class="callout success" style="margin-bottom:0;">
+        <span class="callout-title">🛡 Defense-in-Depth</span>
+        This is the primary reason to use hybrid during migration: even if one algorithm falls, the other protects you. The attacker faces the strongest of the two, not the weakest.
+      </div>
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(2)">← Hands-On Lab</button>
+    <button class="btn btn-primary" onclick="showSection(4)">Continue to Decision Exercise →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 4 — DECISION EXERCISE
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section4">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Final Lab Assessment · Deployment Decision</div>
+    <h1>Decision Exercise: Should NovaPay Deploy Kyber?</h1>
+    <p style="font-size:15px; max-width:600px; margin-top:8px;">Based on your benchmark data and analysis, make the deployment recommendation. The CFO, CISO, and engineering lead are waiting for your report.</p>
+  </div>
+
+  <div class="card" style="border-color:rgba(57,210,192,0.3); margin-bottom:24px;">
+    <h3 style="margin-top:0; color:var(--cyan);">📋 NovaPay Decision Context</h3>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;">
+      <div><strong>Transaction Volume:</strong> 2.3M/day</div>
+      <div><strong>Latency Budget:</strong> &lt;50ms per TLS handshake</div>
+      <div><strong>Data Retention:</strong> 7 years (PCI-DSS)</div>
+      <div><strong>Current Algorithm:</strong> RSA-2048</div>
+      <div><strong>Threat Status:</strong> Active harvesting confirmed</div>
+      <div><strong>Migration Budget:</strong> Constrained</div>
+    </div>
+  </div>
+
+  <!-- Decision 1 -->
+  <div class="card">
+    <h3 style="margin-top:0;">Decision 1: Is ML-KEM's performance overhead acceptable for NovaPay?</h3>
+    <p>Based on your benchmark data: Kyber-768 keys are ~4× larger than RSA, but operations are typically faster. Does this tradeoff work for a payment gateway processing 2.3M daily transactions?</p>
+    <div class="mc-options" id="dec1-options">
+      <div class="mc-option" onclick="selectDecision('dec1',this,'A')"><span class="mc-letter">A</span><span class="mc-text">Yes — Kyber's speed advantage more than compensates for larger key/ciphertext sizes. Extra bandwidth is negligible for modern networks.</span></div>
+      <div class="mc-option" onclick="selectDecision('dec1',this,'B')"><span class="mc-letter">B</span><span class="mc-text">No — the 4× larger keys would create unacceptable network overhead at 2.3M transactions/day</span></div>
+      <div class="mc-option" onclick="selectDecision('dec1',this,'C')"><span class="mc-letter">C</span><span class="mc-text">Uncertain — more testing needed with real production traffic before deciding</span></div>
+    </div>
+    <div class="answer-reveal" id="reveal-dec1"></div>
+  </div>
+
+  <!-- Decision 2 -->
+  <div class="card">
+    <h3 style="margin-top:0;">Decision 2: Should NovaPay deploy pure Kyber or hybrid X25519+Kyber?</h3>
+    <p>Engineering prefers pure Kyber (simpler deployment). Security prefers hybrid (defense-in-depth). What's the right call for a financial services company?</p>
+    <div class="mc-options" id="dec2-options">
+      <div class="mc-option" onclick="selectDecision('dec2',this,'A')"><span class="mc-letter">A</span><span class="mc-text">Pure Kyber — NIST has standardized it, so it's trusted. Simpler deployment reduces implementation bugs.</span></div>
+      <div class="mc-option" onclick="selectDecision('dec2',this,'B')"><span class="mc-letter">B</span><span class="mc-text">Hybrid X25519+Kyber — defense-in-depth protects against undiscovered weaknesses in the new algorithm. Worth the modest overhead for financial data.</span></div>
+      <div class="mc-option" onclick="selectDecision('dec2',this,'C')"><span class="mc-letter">C</span><span class="mc-text">Keep RSA-2048 until quantum computers are confirmed, then switch to pure Kyber</span></div>
+    </div>
+    <div class="answer-reveal" id="reveal-dec2"></div>
+  </div>
+
+  <!-- Decision 3 -->
+  <div class="card">
+    <h3 style="margin-top:0;">Decision 3: Which ML-KEM security level should NovaPay use?</h3>
+    <p>NIST offers ML-KEM-512 (~AES-128), ML-KEM-768 (~AES-192), and ML-KEM-1024 (~AES-256). NovaPay handles PCI-DSS Level 1 financial data.</p>
+    <div class="mc-options" id="dec3-options">
+      <div class="mc-option" onclick="selectDecision('dec3',this,'A')"><span class="mc-letter">A</span><span class="mc-text">ML-KEM-512 — smallest keys and fastest speed, sufficient security for most applications</span></div>
+      <div class="mc-option" onclick="selectDecision('dec3',this,'B')"><span class="mc-letter">B</span><span class="mc-text">ML-KEM-768 — NIST's recommended default. Balances security margin with performance. Appropriate for financial data.</span></div>
+      <div class="mc-option" onclick="selectDecision('dec3',this,'C')"><span class="mc-letter">C</span><span class="mc-text">ML-KEM-1024 — maximum security for maximum-sensitivity data. Performance cost is justified.</span></div>
+    </div>
+    <div class="answer-reveal" id="reveal-dec3"></div>
+  </div>
+
+  <!-- Decision 4 -->
+  <div class="card">
+    <h3 style="margin-top:0;">Decision 4: What happens to NovaPay's AES-256 data-at-rest encryption?</h3>
+    <p>NovaPay stores encrypted transaction records with AES-256. Does migrating the key exchange to Kyber affect this?</p>
+    <div class="mc-options" id="dec4-options">
+      <div class="mc-option" onclick="selectDecision('dec4',this,'A')"><span class="mc-letter">A</span><span class="mc-text">AES-256 must also be replaced with a post-quantum algorithm</span></div>
+      <div class="mc-option" onclick="selectDecision('dec4',this,'B')"><span class="mc-letter">B</span><span class="mc-text">AES-256 stays — it's quantum-resistant at reduced security (AES-128 equivalent). The important thing is that the KEY EXCHANGE delivering AES keys is now quantum-resistant via Kyber.</span></div>
+      <div class="mc-option" onclick="selectDecision('dec4',this,'C')"><span class="mc-letter">C</span><span class="mc-text">AES-256 and Kyber are unrelated systems — migrating one has no impact on the other</span></div>
+    </div>
+    <div class="answer-reveal" id="reveal-dec4"></div>
+  </div>
+
+  <!-- Decision 5 -->
+  <div class="card">
+    <h3 style="margin-top:0;">Decision 5: What is the single most important metric to report to NovaPay's CFO?</h3>
+    <p>The CFO wants one number that justifies the migration investment. Based on your lab work, what's most compelling?</p>
+    <div class="mc-options" id="dec5-options">
+      <div class="mc-option" onclick="selectDecision('dec5',this,'A')"><span class="mc-letter">A</span><span class="mc-text">Key generation is 10–30× faster with Kyber — operational efficiency actually improves</span></div>
+      <div class="mc-option" onclick="selectDecision('dec5',this,'B')"><span class="mc-letter">B</span><span class="mc-text">Per-handshake latency stays under 1ms with Kyber — well within the 50ms budget, meaning zero impact on customer experience while eliminating quantum risk</span></div>
+      <div class="mc-option" onclick="selectDecision('dec5',this,'C')"><span class="mc-letter">C</span><span class="mc-text">Kyber public keys are only 1,184 bytes — barely noticeable on modern networks</span></div>
+      <div class="mc-option" onclick="selectDecision('dec5',this,'D')"><span class="mc-letter">D</span><span class="mc-text">NIST mandates migration by 2035 and non-compliance could mean regulatory fines</span></div>
+    </div>
+    <div class="answer-reveal" id="reveal-dec5"></div>
+  </div>
+
+  <!-- COMPLETION -->
+  <div class="completion-banner" id="completionBanner" style="display:none;">
+    <h2>✓ Lab 2 Complete</h2>
+    <p>You've learned how key encapsulation works, implemented ML-KEM with the OQS library, benchmarked it against RSA-2048, explored hybrid failure modes, and made a deployment recommendation for a real-world financial services scenario.</p>
+    <div class="future-hook">
+      "Next up — Lab 3: ML-DSA (Dilithium). You'll implement the other half of post-quantum cryptography: digital signatures. You'll sign documents, verify authenticity, and learn why signature sizes are the real tradeoff challenge."
+    </div>
+    <div style="display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+      <button class="btn btn-ghost" onclick="window.print()">🖨 Print / Save PDF</button>
+      <button class="btn btn-primary" onclick="alert('Submit your completed worksheet via your Canvas assignment. Use Print → Save as PDF to capture all responses.')">Submit on Canvas ↗</button>
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(3)">← Simulators</button>
+    <button class="btn btn-green" onclick="completeLab()">Complete Lab 2 ✓</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ─── STATE ───
+const state = {
+  currentSection: 0,
+  sectionsVisited: new Set([0]),
+  checkpoints: {},
+  decisionsAnswered: 0
+};
+
+// ─── SECTION NAV ───
+function showSection(n) {
+  document.querySelectorAll('.section-wrap').forEach((s,i) => s.classList.toggle('active', i === n));
+  document.querySelectorAll('.nav-tab').forEach((t,i) => t.classList.toggle('active', i === n));
+  state.currentSection = n;
+  state.sectionsVisited.add(n);
+  updateProgress();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function updateProgress() {
+  document.getElementById('progressBar').style.width = (state.sectionsVisited.size / 5) * 100 + '%';
+  state.sectionsVisited.forEach(i => { const t = document.getElementById('tab'+i); if (t && i < state.currentSection) t.classList.add('done'); });
+}
+
+// ─── CONCEPT TABS ───
+function showConcept(id, btn) {
+  document.querySelectorAll('.concept-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.concept-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─── SIM TABS ───
+function showSim(id, btn) {
+  document.querySelectorAll('.sim-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sim-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('sim-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─── CODE COPY ───
+function copyCode(btn, id) {
+  const el = document.getElementById(id);
+  const text = el.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '✓ Copied';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// ─── LAB STEP TOGGLE ───
+function toggleStep(id) {
+  const body = document.getElementById('body-'+id);
+  if (body.style.display === 'none') body.style.display = 'block';
+  else body.style.display = 'none';
+}
+
+// ─── CHECKPOINT ANSWERS ───
+const checkpointAnswers = {
+  cp1: { correct: 'A', explanation: "Kyber-768 public keys are exactly 1,184 bytes, while RSA-2048 DER-encoded public keys are approximately 294 bytes. Kyber KeyGen is typically 10–30× faster than RSA KeyGen because lattice operations use efficient polynomial arithmetic, while RSA must generate large prime numbers." },
+  cp2: { correct: 'A', explanation: "Both verifications must return True. This confirms the core cryptographic property: the encapsulated shared secret matches the decapsulated one (for Kyber), and the encrypted session key matches the decrypted one (for RSA). If either is False, there's a bug in the implementation." },
+  cp3: { correct: 'A', explanation: "This is the typical pattern: Kyber significantly outperforms RSA in all three speed categories (KeyGen, Encaps, Decaps), but RSA produces smaller keys and ciphertexts. The tradeoff is speed-for-size. For most network applications, speed matters more than a few extra kilobytes per handshake." }
+};
+
+function selectCheckpoint(qid, el, choice) {
+  const container = el.parentElement;
+  if (state.checkpoints[qid]) return;
+  state.checkpoints[qid] = choice;
+  container.querySelectorAll('.mc-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  const data = checkpointAnswers[qid];
+  const isCorrect = choice === data.correct;
+  setTimeout(() => {
+    container.querySelectorAll('.mc-option').forEach(o => {
+      const l = o.querySelector('.mc-letter').textContent;
+      if (l === data.correct) o.classList.add('correct');
+      else if (l === choice && !isCorrect) o.classList.add('incorrect');
+    });
+    const reveal = document.getElementById('reveal-'+qid);
+    reveal.className = 'answer-reveal show ' + (isCorrect ? 'correct-reveal' : 'incorrect-reveal');
+    reveal.innerHTML = `<span class="reveal-label">${isCorrect ? '✓ Confirmed' : '✗ Check Your Output'}</span>${data.explanation}`;
+    // Mark step complete
+    const stepNum = qid.replace('cp','');
+    document.getElementById('badge-step'+stepNum).classList.add('complete');
+    document.getElementById('badge-step'+stepNum).textContent = '✓';
+  }, 150);
+}
+
+// ─── PERFORMANCE COMPARISON ───
+const perfData = {
+  single: {
+    title: 'Single Operation Comparison',
+    bars: [
+      { label: 'KeyGen', rsa: 4.2, kyber: 0.15, unit: 'ms' },
+      { label: 'Encaps/Encrypt', rsa: 0.25, kyber: 0.12, unit: 'ms' },
+      { label: 'Decaps/Decrypt', rsa: 4.8, kyber: 0.18, unit: 'ms' },
+      { label: 'Public Key', rsa: 294, kyber: 1184, unit: 'bytes', isSizeMetric: true },
+      { label: 'Ciphertext', rsa: 256, kyber: 1088, unit: 'bytes', isSizeMetric: true }
+    ],
+    insight: 'For a single operation, Kyber is significantly faster for KeyGen and Decapsulation. The larger key/ciphertext sizes add less than 2KB per handshake — negligible for any modern network connection.'
+  },
+  handshake: {
+    title: 'Full TLS Handshake Impact',
+    bars: [
+      { label: 'Handshake Time', rsa: 9.25, kyber: 0.45, unit: 'ms' },
+      { label: 'Bandwidth Added', rsa: 0.55, kyber: 2.27, unit: 'KB', isSizeMetric: true },
+      { label: 'Total Latency', rsa: 12, kyber: 3.5, unit: 'ms' }
+    ],
+    insight: 'A full TLS handshake with Kyber adds ~1.7KB of bandwidth but completes in ~3.5ms versus ~12ms for RSA. NovaPay\'s 50ms latency budget is easily met. The handshake is actually FASTER with Kyber despite the extra bytes.'
+  },
+  daily: {
+    title: '2.3M Daily Transactions at Scale',
+    bars: [
+      { label: 'Total Compute', rsa: 21275, kyber: 1035, unit: 'sec', isTime: true },
+      { label: 'Extra Bandwidth', rsa: 0, kyber: 3.96, unit: 'GB/day', isSizeMetric: true },
+      { label: 'Avg Latency', rsa: 12, kyber: 3.5, unit: 'ms' }
+    ],
+    insight: 'At 2.3M daily transactions, Kyber saves approximately 5.6 HOURS of cumulative compute time compared to RSA. The extra bandwidth is ~4GB/day — trivial for a payment gateway. The performance case for migration is strong.'
+  }
+};
+
+function showPerfScenario(key, btn) {
+  document.querySelectorAll('.perf-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const d = perfData[key];
+  let html = `<h3 style="margin-top:0;">${d.title}</h3>`;
+  d.bars.forEach(b => {
+    const maxVal = Math.max(b.rsa, b.kyber);
+    const rsaPct = (b.rsa / maxVal) * 100;
+    const kyberPct = (b.kyber / maxVal) * 100;
+    const rsaWins = b.isSizeMetric ? b.rsa < b.kyber : b.rsa < b.kyber;
+    const kyberWins = !rsaWins;
+    html += `<div style="margin-bottom:16px;">
+      <div style="font-weight:600; font-size:13px; margin-bottom:6px; color:var(--text);">${b.label}</div>
+      <div class="size-bar-row">
+        <span class="size-bar-label" style="color:var(--red);">RSA-2048</span>
+        <div class="size-bar-track"><div class="size-bar-fill" style="width:${rsaPct}%; background:${!b.isSizeMetric && b.rsa > b.kyber ? 'var(--red)' : b.isSizeMetric && b.rsa < b.kyber ? 'var(--green)' : 'var(--orange)'}">&nbsp;</div></div>
+        <span class="size-bar-val">${typeof b.rsa === 'number' && b.rsa % 1 !== 0 ? b.rsa.toFixed(2) : b.rsa} ${b.unit}</span>
+      </div>
+      <div class="size-bar-row">
+        <span class="size-bar-label" style="color:var(--cyan);">Kyber-768</span>
+        <div class="size-bar-track"><div class="size-bar-fill" style="width:${kyberPct}%; background:${!b.isSizeMetric && b.kyber < b.rsa ? 'var(--green)' : b.isSizeMetric && b.kyber < b.rsa ? 'var(--green)' : 'var(--orange)'}">&nbsp;</div></div>
+        <span class="size-bar-val">${typeof b.kyber === 'number' && b.kyber % 1 !== 0 ? b.kyber.toFixed(2) : b.kyber} ${b.unit}</span>
+      </div>
+    </div>`;
+  });
+  document.getElementById('perf-display').innerHTML = html;
+  document.getElementById('perf-insight').textContent = d.insight;
+  // Animate bars
+  setTimeout(() => {
+    document.querySelectorAll('.size-bar-fill').forEach(f => { const w = f.style.width; f.style.width = '0%'; setTimeout(() => f.style.width = w, 50); });
+  }, 10);
+}
+
+// ─── HYBRID FAILURE SIM ───
+const hybridExplanations = {
+  1: { title: 'Scenario 1: Quantum Computer Breaks X25519', color: 'var(--red)', text: 'A cryptographically relevant quantum computer arrives and breaks X25519 (Shor\'s algorithm on the ECDLP). In a pure-classical system, this is catastrophic — all traffic is exposed. But in a hybrid system, the attacker also needs to break ML-KEM, which requires solving the lattice problem. <strong>The hybrid holds because the attacker must break BOTH components simultaneously.</strong>', callout: 'This is the primary reason to use hybrid during migration: even if one algorithm falls, the other protects you. The attacker faces the strongest of the two, not the weakest.' },
+  2: { title: 'Scenario 2: Flaw Discovered in Kyber', color: 'var(--orange)', text: 'Suppose researchers discover a mathematical weakness in ML-KEM that allows efficient attacks (classical or quantum). This has happened before — NIST had to reject SIKE after it was broken post-selection. In a pure-PQC deployment, this is catastrophic. In a hybrid, X25519 still protects the data — an attacker needs to break both. <strong>Hybrid buys time to patch without exposure.</strong>', callout: 'New algorithms carry more risk of undiscovered weaknesses. Hybrid deployment is insurance against the unknown. This is why security-conscious organizations prefer hybrid even if it adds complexity.' },
+  3: { title: 'Scenario 3: Both Components Compromised', color: 'var(--green)', text: 'For a hybrid to fail, an attacker must simultaneously break both X25519 AND ML-KEM. This would require both a quantum computer capable of Shor\'s AND a breakthrough in lattice cryptanalysis — two independent, currently unsolved problems. <strong>This is the design principle: the security is the maximum of both components, not the minimum.</strong>', callout: 'Simultaneous compromise of both independent cryptographic foundations is considered astronomically unlikely. This is the "belt AND suspenders" approach to migration.' }
+};
+
+function showHybridScenario(n, el) {
+  document.querySelectorAll('.hybrid-scenario').forEach(s => s.classList.remove('active'));
+  el.classList.add('active');
+  const d = hybridExplanations[n];
+  document.getElementById('hybridExplanation').innerHTML = `
+    <h3 style="margin-top:0; color:${d.color};">${d.title}</h3>
+    <p>${d.text}</p>
+    <div class="callout success" style="margin-bottom:0;">
+      <span class="callout-title">🛡 Takeaway</span>
+      ${d.callout}
+    </div>`;
+}
+
+// ─── DECISION QUESTIONS ───
+const decisionAnswers = {
+  dec1: { correct: 'A', explanation: "The data confirms it: Kyber's per-operation speed is equal to or faster than RSA, and the extra ~2KB per handshake is trivial at modern network speeds. At 2.3M daily transactions, the cumulative compute savings are substantial. The overhead is not just acceptable — it's actually an operational improvement in most metrics." },
+  dec2: { correct: 'B', explanation: "For a financial services company handling sensitive data, hybrid X25519+Kyber is the right choice. NIST standardization doesn't guarantee absence of undiscovered weaknesses — the SIKE algorithm was broken after NIST selection. Hybrid provides defense-in-depth: if either component has an undiscovered flaw, the other still protects. The modest overhead is justified for PCI-DSS Level 1 data." },
+  dec3: { correct: 'B', explanation: "ML-KEM-768 is NIST's recommended default and provides ~AES-192 equivalent security — appropriate for financial data. ML-KEM-512 might be considered for extremely latency-sensitive embedded systems, while ML-KEM-1024 adds security margin for classified data. For NovaPay's PCI-DSS requirements, 768 strikes the right balance between security and performance." },
+  dec4: { correct: 'B', explanation: "AES-256 remains secure against quantum attacks — Grover's algorithm only reduces it to AES-128 equivalent, which is still computationally infeasible. The critical migration target is the KEY EXCHANGE (RSA → Kyber) that establishes the AES session keys. Once the key exchange is quantum-resistant, AES-256 encrypted data is protected end-to-end. The two systems work together." },
+  dec5: { correct: 'B', explanation: "The CFO cares about customer experience and business risk. The most compelling metric is: 'Per-handshake latency stays under 1ms — well within our 50ms budget — meaning zero impact on customer experience while eliminating quantum risk to 7 years of payment data.' This directly addresses the two concerns: cost (no performance degradation) and benefit (concrete risk elimination). Raw speed comparisons and regulatory threats are supporting arguments, not the lead." }
+};
+
+function selectDecision(qid, el, choice) {
+  const container = document.getElementById(qid+'-options');
+  if (container.dataset.answered) return;
+  container.dataset.answered = 'true';
+  container.querySelectorAll('.mc-option').forEach(o => o.classList.remove('selected'));
+  el.classList.add('selected');
+  const data = decisionAnswers[qid];
+  const isCorrect = choice === data.correct;
+  setTimeout(() => {
+    container.querySelectorAll('.mc-option').forEach(o => {
+      const l = o.querySelector('.mc-letter').textContent;
+      if (l === data.correct) o.classList.add('correct');
+      else if (l === choice && !isCorrect) o.classList.add('incorrect');
+    });
+    const reveal = document.getElementById('reveal-'+qid);
+    reveal.className = 'answer-reveal show ' + (isCorrect ? 'correct-reveal' : 'incorrect-reveal');
+    reveal.innerHTML = `<span class="reveal-label">${isCorrect ? '✓ Correct' : '✗ Better Answer: ' + data.correct}</span>${data.explanation}`;
+    state.decisionsAnswered++;
+  }, 150);
+}
+
+// ─── LAB COMPLETION ───
+function completeLab() {
+  if (state.decisionsAnswered < 5) {
+    alert(`Please answer all 5 decision questions before finishing.\n\nAnswered: ${state.decisionsAnswered}/5`);
+    return;
+  }
+  document.getElementById('completionBanner').style.display = 'block';
+  document.getElementById('completionBanner').scrollIntoView({ behavior: 'smooth' });
+  document.getElementById('tab4').classList.add('done');
+  updateProgress();
+}
+
+// ─── LWE VISUALIZATION ───
+function buildNoiseGrids() {
+  const clean = document.getElementById('cleanGrid');
+  const noisy = document.getElementById('noisyGrid');
+  if (!clean || !noisy) return;
+  const colors = ['var(--accent)','var(--cyan)','var(--green)','var(--purple)'];
+  // Clean: organized pattern
+  for (let i = 0; i < 64; i++) {
+    const d = document.createElement('div');
+    d.className = 'noise-dot';
+    const row = Math.floor(i/8);
+    d.style.background = (row % 2 === 0) ? 'var(--accent)' : 'var(--surface2)';
+    d.style.opacity = (row % 2 === 0) ? '0.8' : '0.2';
+    clean.appendChild(d);
+  }
+  // Noisy: randomized
+  for (let i = 0; i < 64; i++) {
+    const d = document.createElement('div');
+    d.className = 'noise-dot';
+    const rnd = Math.random();
+    d.style.background = rnd > 0.5 ? colors[Math.floor(Math.random()*colors.length)] : 'var(--surface2)';
+    d.style.opacity = (0.2 + Math.random() * 0.6).toFixed(2);
+    noisy.appendChild(d);
+  }
+}
+
+// ─── INIT ───
+buildNoiseGrids();
+showPerfScenario('single', document.querySelector('.perf-btn'));
+</script>
+</body>
+</html>
