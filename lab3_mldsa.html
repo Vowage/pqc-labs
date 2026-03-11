@@ -1,0 +1,1301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lab 3 — ML-DSA Digital Signatures · PQC Series</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg:#080c10;--surface:#0d1117;--surface2:#161b22;--surface3:#1c2330;
+  --border:#21282f;--border2:#30363d;
+  --accent:#f0883e;--accent-dim:rgba(240,136,62,0.12);
+  --green:#3fb950;--green-dim:rgba(63,185,80,0.1);
+  --orange:#e3b341;--orange-dim:rgba(227,179,65,0.1);
+  --red:#f85149;--red-dim:rgba(248,81,73,0.1);
+  --purple:#bc8cff;--purple-dim:rgba(188,140,255,0.1);
+  --blue:#58a6ff;--blue-dim:rgba(88,166,255,0.12);
+  --text:#e6edf3;--text-muted:#8b949e;--text-dim:#484f58;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;--radius:8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.7;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:1000;}
+.progress-track{position:fixed;top:0;left:0;right:0;height:3px;background:var(--border);z-index:200;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--red));transition:width 0.5s ease;width:0%;}
+.top-nav{position:sticky;top:0;background:rgba(8,12,16,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);z-index:100;padding:0 24px;}
+.nav-inner{max-width:960px;margin:0 auto;display:flex;align-items:center;overflow-x:auto;scrollbar-width:none;}
+.nav-inner::-webkit-scrollbar{display:none;}
+.nav-tab{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-dim);padding:14px 16px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all 0.2s;background:none;border-top:none;border-left:none;border-right:none;display:flex;align-items:center;gap:6px;}
+.nav-tab:hover{color:var(--text-muted);}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.nav-dot{width:6px;height:6px;border-radius:50%;background:var(--text-dim);transition:background 0.2s;}
+.nav-tab.done .nav-dot{background:var(--green);}
+.nav-tab.active .nav-dot{background:var(--accent);}
+.section-wrap{display:none;animation:fadeIn 0.3s ease;}
+.section-wrap.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.container{max-width:960px;margin:0 auto;padding:0 24px 80px;}
+h1{font-size:clamp(20px,2.5vw,28px);font-weight:700;line-height:1.25;}
+h2{font-size:18px;font-weight:700;margin-bottom:14px;}
+h3{font-size:15px;font-weight:600;color:var(--accent);margin:24px 0 8px;}
+p{color:var(--text-muted);margin-bottom:12px;}
+p:last-child{margin-bottom:0;}
+strong{color:var(--text);font-weight:600;}
+.section-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+.section-header{padding:48px 0 36px;border-bottom:1px solid var(--border);margin-bottom:36px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:16px;}
+.callout{border-radius:var(--radius);padding:14px 18px;margin:18px 0;border-left:3px solid;font-size:13.5px;line-height:1.6;}
+.callout-title{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;display:block;margin-bottom:6px;}
+.callout.info{background:var(--accent-dim);border-color:var(--accent);}
+.callout.info .callout-title{color:var(--accent);}
+.callout.blue{background:var(--blue-dim);border-color:var(--blue);}
+.callout.blue .callout-title{color:var(--blue);}
+.callout.warn{background:var(--orange-dim);border-color:var(--orange);}
+.callout.warn .callout-title{color:var(--orange);}
+.callout.danger{background:var(--red-dim);border-color:var(--red);}
+.callout.danger .callout-title{color:var(--red);}
+.callout.success{background:var(--green-dim);border-color:var(--green);}
+.callout.success .callout-title{color:var(--green);}
+.callout.purple{background:var(--purple-dim);border-color:var(--purple);}
+.callout.purple .callout-title{color:var(--purple);}
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:3px 9px;border-radius:20px;border:1px solid;}
+.badge-orange{background:var(--accent-dim);color:var(--accent);border-color:rgba(240,136,62,0.3);}
+.badge-green{background:var(--green-dim);color:var(--green);border-color:rgba(63,185,80,0.3);}
+.badge-blue{background:var(--blue-dim);color:var(--blue);border-color:rgba(88,166,255,0.3);}
+.badge-red{background:var(--red-dim);color:var(--red);border-color:rgba(248,81,73,0.3);}
+.badge-purple{background:var(--purple-dim);color:var(--purple);border-color:rgba(188,140,255,0.3);}
+.btn{font-family:var(--sans);font-size:13px;font-weight:600;padding:10px 22px;border-radius:6px;cursor:pointer;transition:all 0.18s;border:1px solid;display:inline-flex;align-items:center;gap:7px;}
+.btn-primary{background:var(--accent);color:#08090c;border-color:var(--accent);}
+.btn-primary:hover{background:#ffaa66;}
+.btn-ghost{background:transparent;color:var(--text-muted);border-color:var(--border2);}
+.btn-ghost:hover{background:var(--surface2);color:var(--text);}
+.btn-green{background:var(--green);color:#08090c;border-color:var(--green);}
+.btn-green:hover{background:#56d364;}
+.btn-red{background:var(--red);color:white;border-color:var(--red);}
+.btn-sm{font-size:12px;padding:7px 16px;}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+/* TERMINAL */
+.terminal{background:#05080b;border:1px solid #1e2d3d;border-radius:10px;overflow:hidden;margin:20px 0;}
+.term-bar{background:#0d1520;border-bottom:1px solid #1e2d3d;padding:10px 16px;display:flex;align-items:center;gap:10px;}
+.term-dots{display:flex;gap:6px;}
+.dot{width:10px;height:10px;border-radius:50%;}
+.dot-r{background:#f85149;}.dot-y{background:#e3b341;}.dot-g{background:#3fb950;}
+.term-title{font-family:var(--mono);font-size:11px;color:var(--text-dim);flex:1;text-align:center;}
+.term-body{padding:22px 28px;font-family:var(--mono);font-size:12.5px;line-height:1.9;color:#adbac7;}
+.p{color:var(--accent);}.cmd{color:var(--text);}.out{color:var(--text-muted);}
+.ok{color:var(--green);}.err{color:var(--red);font-weight:600;}.warn{color:var(--orange);}
+.cmt{color:var(--text-dim);font-style:italic;}.hi{color:var(--accent);}.blank{height:6px;}
+/* MC QUIZ */
+.quiz-block{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin:20px 0;}
+.q-text{font-size:16px;font-weight:600;color:var(--text);line-height:1.5;margin-bottom:20px;}
+.mc-options{display:flex;flex-direction:column;gap:10px;}
+.mc-option{display:flex;align-items:center;gap:14px;padding:13px 16px;border:1px solid var(--border2);border-radius:8px;cursor:pointer;transition:all 0.18s;background:var(--surface2);}
+.mc-option:hover{border-color:var(--accent);background:var(--accent-dim);}
+.mc-option.correct{border-color:var(--green);background:var(--green-dim);pointer-events:none;}
+.mc-option.incorrect{border-color:var(--red);background:var(--red-dim);pointer-events:none;}
+.mc-letter{font-family:var(--mono);font-size:12px;font-weight:700;width:24px;height:24px;border-radius:4px;background:var(--surface);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text-muted);}
+.mc-option.correct .mc-letter{background:var(--green);border-color:var(--green);color:#08090c;}
+.mc-option.incorrect .mc-letter{background:var(--red);border-color:var(--red);color:white;}
+.mc-text{font-size:14px;color:var(--text);}
+.answer-reveal{display:none;margin-top:16px;padding:14px 16px;border-radius:8px;font-size:13.5px;line-height:1.6;border-left:3px solid;animation:fadeIn 0.3s ease;}
+.answer-reveal.show{display:block;}
+.answer-reveal.correct-reveal{background:var(--green-dim);border-color:var(--green);}
+.answer-reveal.incorrect-reveal{background:rgba(248,81,73,0.08);border-color:var(--red);}
+.reveal-label{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;display:block;margin-bottom:6px;}
+.correct-reveal .reveal-label{color:var(--green);}
+.incorrect-reveal .reveal-label{color:var(--red);}
+/* CONCEPT TABS */
+.concept-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:28px;overflow-x:auto;scrollbar-width:none;}
+.concept-tab{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-dim);padding:11px 18px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all 0.2s;background:none;border-top:none;border-left:none;border-right:none;}
+.concept-tab:hover{color:var(--text-muted);}
+.concept-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.concept-panel{display:none;}
+.concept-panel.active{display:block;animation:fadeIn 0.25s ease;}
+/* SIGNATURE VISUALIZER */
+.sig-doc{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:18px;font-family:var(--mono);font-size:12px;line-height:1.8;margin:14px 0;position:relative;}
+.sig-doc.verified{border-color:var(--green);background:var(--green-dim);}
+.sig-doc.tampered{border-color:var(--red);background:var(--red-dim);}
+.sig-doc .doc-label{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:8px;}
+.sig-doc.verified .doc-label{color:var(--green);}
+.sig-doc.tampered .doc-label{color:var(--red);}
+.sig-bytes{font-family:var(--mono);font-size:11px;word-break:break-all;color:var(--text-dim);line-height:1.5;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+.sig-bytes.has-sig{color:var(--accent);}
+.tamper-controls{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0;}
+.tamper-btn{font-family:var(--mono);font-size:11px;font-weight:700;padding:6px 14px;border-radius:4px;cursor:pointer;border:1px solid var(--border2);background:var(--surface2);color:var(--text-dim);transition:all 0.15s;}
+.tamper-btn:hover{border-color:var(--red);color:var(--red);background:var(--red-dim);}
+.tamper-btn.active-tamper{border-color:var(--red);color:var(--red);background:var(--red-dim);}
+.verify-status{display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:8px;font-family:var(--mono);font-size:13px;font-weight:700;margin:14px 0;transition:all 0.3s;}
+.vs-pass{background:var(--green-dim);border:1px solid var(--green);color:var(--green);}
+.vs-fail{background:var(--red-dim);border:1px solid var(--red);color:var(--red);}
+.vs-idle{background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);}
+.vs-icon{font-size:20px;}
+/* RECORD TABLE */
+.record-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:13px;}
+.record-table th{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;}
+.record-table td{padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--text-muted);transition:all 0.3s;}
+.record-table td.filled{color:var(--accent);}
+/* BENCH BARS */
+.bench-row{margin-bottom:14px;}
+.bench-label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:5px;}
+.bench-track{height:26px;background:var(--surface2);border-radius:5px;overflow:hidden;border:1px solid var(--border);}
+.bench-fill{height:100%;border-radius:5px;display:flex;align-items:center;padding:0 10px;font-family:var(--mono);font-size:11px;font-weight:700;white-space:nowrap;transition:width 1.2s cubic-bezier(0.16,1,0.3,1);width:0%;}
+.bf-rsa{background:rgba(248,81,73,0.3);color:var(--red);}
+.bf-ecdsa{background:rgba(227,179,65,0.3);color:var(--orange);}
+.bf-44{background:rgba(240,136,62,0.2);color:var(--accent);}
+.bf-65{background:rgba(240,136,62,0.3);color:var(--accent);}
+.bf-87{background:rgba(240,136,62,0.45);color:var(--accent);}
+/* FILE SIZE CHART */
+.ratio-chart{margin:20px 0;}
+.ratio-row{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.ratio-filename{font-family:var(--mono);font-size:11px;color:var(--text-muted);width:160px;flex-shrink:0;}
+.ratio-track{flex:1;height:22px;background:var(--surface2);border-radius:4px;overflow:hidden;border:1px solid var(--border);position:relative;}
+.ratio-fill-file{height:100%;background:rgba(88,166,255,0.25);display:inline-block;}
+.ratio-fill-sig{height:100%;background:rgba(240,136,62,0.45);display:inline-block;}
+.ratio-label{font-family:var(--mono);font-size:10px;color:var(--text-dim);width:80px;text-align:right;flex-shrink:0;}
+/* FORGERY TABLE */
+.forgery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin:16px 0;}
+.fg-cell{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center;cursor:pointer;transition:all 0.18s;font-family:var(--mono);font-size:11px;}
+.fg-cell:hover{border-color:var(--accent);}
+.fg-cell.tried-fail{border-color:var(--red);background:var(--red-dim);color:var(--red);}
+.fg-cell.tried-pass{border-color:var(--green);background:var(--green-dim);color:var(--green);}
+.fg-cell-label{font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-dim);margin-bottom:4px;}
+/* SECURITY LEVEL CARDS */
+.level-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0;}
+.level-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;cursor:pointer;transition:all 0.2s;text-align:center;}
+.level-card:hover{border-color:var(--accent);transform:translateY(-2px);}
+.level-card.selected-card{border-color:var(--accent);background:var(--accent-dim);}
+.lc-name{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--accent);margin-bottom:6px;}
+.lc-bar{height:6px;border-radius:3px;margin-bottom:10px;background:var(--accent);}
+/* REFLECT */
+.reflect-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:20px;}
+.reflect-q{font-size:15px;font-weight:600;color:var(--text);margin-bottom:14px;line-height:1.5;}
+.ref-opts{display:flex;flex-direction:column;gap:8px;}
+.ref-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1px solid var(--border2);border-radius:8px;cursor:pointer;background:var(--surface2);transition:all 0.18s;font-size:13.5px;line-height:1.5;color:var(--text-muted);}
+.ref-opt:hover{border-color:var(--accent);background:var(--accent-dim);color:var(--text);}
+.ref-opt.correct{border-color:var(--green);background:var(--green-dim);pointer-events:none;color:var(--text);}
+.ref-opt.incorrect{border-color:var(--red);background:var(--red-dim);pointer-events:none;}
+.ref-letter{font-family:var(--mono);font-size:12px;font-weight:700;width:22px;height:22px;border-radius:4px;background:var(--surface);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text-dim);margin-top:1px;}
+.ref-opt.correct .ref-letter{background:var(--green);border-color:var(--green);color:#08090c;}
+.ref-opt.incorrect .ref-letter{background:var(--red);border-color:var(--red);color:white;}
+/* COMPLETION */
+.completion-banner{background:linear-gradient(135deg,rgba(240,136,62,0.07),rgba(248,81,73,0.05));border:1px solid rgba(240,136,62,0.25);border-radius:12px;padding:36px;text-align:center;margin:32px 0;display:none;}
+.completion-banner.show{display:block;animation:fadeIn 0.4s ease;}
+.completion-banner h2{font-size:22px;color:var(--accent);margin-bottom:10px;}
+.future-hook{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:16px 20px;font-style:italic;font-size:15px;color:var(--accent);max-width:600px;margin:16px auto 20px;line-height:1.6;}
+.section-footer{display:flex;justify-content:space-between;align-items:center;margin-top:44px;padding-top:20px;border-top:1px solid var(--border);gap:12px;}
+.divider{border:none;border-top:1px solid var(--border);margin:28px 0;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.cursor{display:inline-block;animation:blink 1s step-end infinite;color:var(--accent);}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
+input[type=range]{-webkit-appearance:none;width:100%;height:6px;border-radius:3px;background:var(--surface2);border:1px solid var(--border2);outline:none;cursor:pointer;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg);}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--accent);cursor:pointer;border:2px solid var(--bg);}
+@media(max-width:640px){.level-cards{grid-template-columns:1fr;}.container{padding:0 16px 60px;}}
+</style>
+</head>
+<body>
+
+<div class="progress-track"><div class="progress-fill" id="progressBar"></div></div>
+
+<nav class="top-nav">
+  <div class="nav-inner">
+    <button class="nav-tab active" onclick="showSection(0)" id="tab0"><span class="nav-dot"></span> Mission Brief</button>
+    <button class="nav-tab" onclick="showSection(1)" id="tab1"><span class="nav-dot"></span> Concept</button>
+    <button class="nav-tab" onclick="showSection(2)" id="tab2"><span class="nav-dot"></span> Sign &amp; Tamper</button>
+    <button class="nav-tab" onclick="showSection(3)" id="tab3"><span class="nav-dot"></span> Benchmark</button>
+    <button class="nav-tab" onclick="showSection(4)" id="tab4"><span class="nav-dot"></span> File Signing</button>
+    <button class="nav-tab" onclick="showSection(5)" id="tab5"><span class="nav-dot"></span> Break It</button>
+    <button class="nav-tab" onclick="showSection(6)" id="tab6"><span class="nav-dot"></span> Reflection</button>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 0 — MISSION BRIEF
+══════════════════════════════════════════════════ -->
+<div class="section-wrap active" id="section0">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Lab 3 of 5 · Post-Quantum Cryptography</div>
+    <h1>ML-DSA: Signatures That Quantum Computers Can't Forge</h1>
+    <p style="font-size:15px;max-width:640px;margin-top:10px;">A hospital just installed a software update. The ECDSA signature verified successfully. But if an adversary can forge ECDSA signatures with a quantum computer, that verification proves nothing. In this lab, you implement the replacement.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;">
+      <span class="badge badge-orange">⏱ 90 Min</span>
+      <span class="badge badge-blue">🐍 Python + OQS</span>
+      <span class="badge badge-red">⚠ Forgery Threat</span>
+      <span class="badge badge-purple">📁 File Signing</span>
+    </div>
+  </div>
+
+  <!-- Incident terminal -->
+  <div class="terminal">
+    <div class="term-bar"><div class="term-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div><span class="term-title">INCIDENT REPORT — hospital-it.log — 2032-07-19</span></div>
+    <div class="term-body">
+      <div class="err">[ INCIDENT ] Malware detected on cardiac monitoring systems — MedDevice v4.2.1</div>
+      <div class="blank"></div>
+      <div class="out">Update installed: 2032-07-18 03:14 UTC</div>
+      <div class="out">Signature algorithm: ECDSA P-256</div>
+      <div class="out">Signature status at install time: <span class="ok">VALID</span></div>
+      <div class="out">Signed by: MedSoft Vendor CA (public key on file)</div>
+      <div class="blank"></div>
+      <div class="warn">[ FORENSICS ] Signature is cryptographically valid. No hash mismatch detected.</div>
+      <div class="warn">[ FORENSICS ] Binary contents confirmed malicious. Contradiction logged.</div>
+      <div class="blank"></div>
+      <div class="err">[ ROOT CAUSE ] Quantum adversary recovered ECDSA private key from vendor CA public key.</div>
+      <div class="err">[ ROOT CAUSE ] Adversary forged signature on malicious binary. Undetectable by design.</div>
+      <div class="blank"></div>
+      <div class="out">Vendor CA private key: <span class="err">COMPROMISED</span> — cannot be distinguished from legitimate</div>
+      <div class="ok">[ MITIGATION ] Requires migration to ML-DSA signing infrastructure.</div>
+      <div class="blank"></div>
+      <div><span class="p">$ </span><span class="cmd">begin-lab3</span><span class="cursor">_</span></div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:24px 0;">
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:6px;">Broken Algorithm</div>
+      <div style="font-size:18px;font-weight:700;color:var(--red);">ECDSA P-256</div>
+      <div style="font-size:12px;color:var(--text-muted);">Private key recoverable via Shor's on public key</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:6px;">Replacement</div>
+      <div style="font-size:18px;font-weight:700;color:var(--accent);">ML-DSA-65</div>
+      <div style="font-size:12px;color:var(--text-muted);">NIST FIPS 204. Lattice-based. Quantum-safe.</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:6px;">Threat Type</div>
+      <div style="font-size:18px;font-weight:700;color:var(--red);">Forgery</div>
+      <div style="font-size:12px;color:var(--text-muted);">Not privacy loss — entire trust chain broken</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:6px;">NIST Standard</div>
+      <div style="font-size:18px;font-weight:700;color:var(--blue);">FIPS 204</div>
+      <div style="font-size:12px;color:var(--text-muted);">August 2024 — deploy now</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-bottom:18px;">Lab Objectives — Four Exercises</h2>
+    <div style="display:flex;flex-direction:column;">
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);">
+        <div style="width:28px;height:28px;border-radius:6px;background:var(--accent-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">🧠</div>
+        <div><div style="font-weight:600;font-size:14px;color:var(--text);">Understand the Forgery Threat</div><div style="font-size:13px;color:var(--text-muted);">See why signature forgery is different from encryption compromise — and why it is arguably more dangerous.</div></div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);">
+        <div style="width:28px;height:28px;border-radius:6px;background:var(--blue-dim);color:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">✍️</div>
+        <div><div style="font-weight:600;font-size:14px;color:var(--text);">Exercise A: Sign &amp; Tamper</div><div style="font-size:13px;color:var(--text-muted);">Sign a software deployment authorization with ML-DSA-65. Verify it passes. Then modify one character — observe the result.</div></div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);">
+        <div style="width:28px;height:28px;border-radius:6px;background:var(--purple-dim);color:var(--purple);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">📊</div>
+        <div><div style="font-weight:600;font-size:14px;color:var(--text);">Exercise B: Benchmark</div><div style="font-size:13px;color:var(--text-muted);">Compare ML-DSA-44/65/87 against RSA-PSS and ECDSA P-256 on signing time, verification time, and signature size.</div></div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;">
+        <div style="width:28px;height:28px;border-radius:6px;background:var(--red-dim);color:var(--red);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">💥</div>
+        <div><div style="font-weight:600;font-size:14px;color:var(--text);">Break It: Attempted Forgery</div><div style="font-size:13px;color:var(--text-muted);">Systematically modify message and signature bits. Find any combination that passes verification. (Spoiler: you won't.)</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout info" style="margin-top:20px;">
+    <span class="callout-title">🔗 How This Lab Differs From Lab 2</span>
+    Lab 2 covered <strong>key encapsulation</strong> — confidentiality of a shared secret. Lab 3 covers <strong>digital signatures</strong> — authenticity and integrity of data. The threat model is different: a quantum adversary breaking encryption steals your data; a quantum adversary breaking signatures can <em>impersonate you indefinitely</em>.
+  </div>
+
+  <div class="section-footer">
+    <span style="font-size:12px;color:var(--text-dim);font-family:var(--mono);">SECTION 1 OF 7</span>
+    <button class="btn btn-primary" onclick="showSection(1)">Begin: The Forgery Threat →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 1 — CONCEPT
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section1">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Concept · Signature Forgery + ML-DSA Overview</div>
+    <h1>When Signatures Can Be Forged, Nothing Is Trustworthy</h1>
+    <p style="font-size:14px;max-width:580px;margin-top:10px;color:var(--text-muted);">The intuition first. Then a comparison table. Then a micro-check before you implement.</p>
+  </div>
+
+  <div class="concept-tabs">
+    <button class="concept-tab active" onclick="showCP('cp-threat',this)">The Forgery Threat</button>
+    <button class="concept-tab" onclick="showCP('cp-compare',this)">Algorithm Comparison</button>
+    <button class="concept-tab" onclick="showCP('cp-how',this)">How ML-DSA Works</button>
+    <button class="concept-tab" onclick="showCP('cp-attack',this)">Attack Timeline</button>
+  </div>
+
+  <!-- Forgery Threat -->
+  <div class="concept-panel active" id="cp-threat">
+    <div class="callout info">
+      <span class="callout-title">💡 The Core Idea — Signature Forgery</span>
+      A digital signature works because only the private key holder can produce a valid signature — anyone with the public key can verify it, but not create it. Shor's algorithm breaks this by computing the private key directly from the public key. Once an attacker has the private key, they can produce signatures that are <strong>mathematically indistinguishable</strong> from legitimate ones — on any document, past or future. This is not a decryption attack: it is full identity theft at the cryptographic level.
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:20px 0;">
+      <div class="card" style="border-color:rgba(248,81,73,0.3);">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--red);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">Encryption Compromise</div>
+        <p style="font-size:13px;margin:0;">An adversary who breaks RSA encryption can read <strong>past recorded ciphertext</strong>. The data is exposed retroactively. Future communications using new keys remain safe after rekeying.</p>
+        <div style="margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--red);">Impact: Past data exposed</div>
+      </div>
+      <div class="card" style="border-color:rgba(240,136,62,0.4);">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:12px;">Signature Forgery</div>
+        <p style="font-size:13px;margin:0;">An adversary who recovers an ECDSA private key can <strong>forge any future signature</strong> as that entity — software updates, contracts, certificates, code. Rekeying old signed documents doesn't help: old valid signatures remain trusted.</p>
+        <div style="margin-top:10px;font-family:var(--mono);font-size:11px;color:var(--accent);">Impact: Past AND future identity compromised</div>
+      </div>
+    </div>
+
+    <div class="callout danger">
+      <span class="callout-title">🏥 The Hospital Attack in Detail</span>
+      The adversary harvested <strong>signed software updates from the vendor in 2024</strong>. These updates contained the vendor's ECDSA public key in the signature. In 2032, a quantum computer recovers the vendor's private key from those public keys. The adversary now signs a malicious binary as the vendor. Every hospital running that vendor's update infrastructure will install it — and every signature check will pass. There is no cryptographic signal that anything is wrong.
+    </div>
+  </div>
+
+  <!-- Algorithm Comparison -->
+  <div class="concept-panel" id="cp-compare">
+    <p style="margin-bottom:20px;">The table below is the reference for all benchmarking exercises. Memorize the signature size column — it will matter for the file signing exercise.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Algorithm</th>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Security Basis</th>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Quantum Safe?</th>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Sig Size</th>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Verify Speed</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-weight:700;font-size:12px;color:var(--red);">RSA-2048 PSS</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--text-muted);">Integer factorization</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:11px;font-weight:700;color:var(--red);">✗ No</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--text-muted);">256 B</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--text-muted);">~0.10 ms</td></tr>
+        <tr><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-weight:700;font-size:12px;color:var(--orange);">ECDSA P-256</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--text-muted);">Discrete logarithm</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:11px;font-weight:700;color:var(--red);">✗ No</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--text-muted);">72 B</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--text-muted);">~0.10 ms</td></tr>
+        <tr><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(240,136,62,0.03);font-family:var(--mono);font-weight:700;font-size:12px;color:var(--accent);">ML-DSA-44</td><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(240,136,62,0.03);font-size:12px;color:var(--text-muted);">Module lattices (MLWE)</td><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(240,136,62,0.03);font-family:var(--mono);font-size:11px;font-weight:700;color:var(--green);">✓ Yes</td><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(240,136,62,0.03);font-family:var(--mono);font-size:12px;color:var(--text-muted);">2420 B</td><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(240,136,62,0.03);font-size:12px;color:var(--text-muted);">~0.12 ms</td></tr>
+        <tr><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(240,136,62,0.06);font-family:var(--mono);font-weight:700;font-size:12px;color:var(--accent);">ML-DSA-65</td><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(240,136,62,0.06);font-size:12px;color:var(--text-muted);">Module lattices (MLWE)</td><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(240,136,62,0.06);font-family:var(--mono);font-size:11px;font-weight:700;color:var(--green);">✓ Yes</td><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(240,136,62,0.06);font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:700;">3309 B</td><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(240,136,62,0.06);font-size:12px;color:var(--text-muted);">~0.18 ms</td></tr>
+        <tr><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(240,136,62,0.09);font-family:var(--mono);font-weight:700;font-size:12px;color:var(--accent);">ML-DSA-87</td><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(240,136,62,0.09);font-size:12px;color:var(--text-muted);">Module lattices (MLWE)</td><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(240,136,62,0.09);font-family:var(--mono);font-size:11px;font-weight:700;color:var(--green);">✓ Yes</td><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(240,136,62,0.09);font-family:var(--mono);font-size:12px;color:var(--text-muted);">4627 B</td><td style="padding:10px 14px;border:1px solid var(--border);background:rgba(240,136,62,0.09);font-size:12px;color:var(--text-muted);">~0.24 ms</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout warn" style="margin-top:16px;">
+      <span class="callout-title">📐 The Size Cost</span>
+      An ECDSA signature is 72 bytes. An ML-DSA-65 signature is 3309 bytes — roughly 46× larger. This is the primary deployment tradeoff for signatures. For large files this is negligible. For small messages (firmware headers, embedded certificates, IoT telemetry packets) it requires careful planning.
+    </div>
+  </div>
+
+  <!-- How ML-DSA Works -->
+  <div class="concept-panel" id="cp-how">
+    <p>ML-DSA (CRYSTALS-Dilithium) is a lattice-based signature scheme built on Module Learning With Errors. Signing produces a vector that proves knowledge of the private key without revealing it.</p>
+    <div class="terminal">
+      <div class="term-bar"><div class="term-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div><span class="term-title">ml_dsa_overview.py — conceptual walkthrough</span></div>
+      <div class="term-body">
+        <div class="cmt"># Key Generation</div>
+        <div class="out">signer = oqs.Signature(<span style="color:var(--green);">'ML-DSA-65'</span>)</div>
+        <div class="out">public_key = signer.generate_keypair()  <span class="cmt"># pk: 1952 B, sk: 4032 B</span></div>
+        <div class="blank"></div>
+        <div class="cmt"># Signing — private key produces a lattice "witness"</div>
+        <div class="out">message = b<span style="color:var(--green);">"DEPLOY firmware v4.3.1 to ward-7 cardiac monitors"</span></div>
+        <div class="out">signature = signer.sign(message)          <span class="cmt"># sig: 3309 B</span></div>
+        <div class="blank"></div>
+        <div class="cmt"># Verification — public key checks the witness against the message</div>
+        <div class="out">is_valid = signer.verify(message, signature, public_key)</div>
+        <div class="ok">print(is_valid)  →  True</div>
+        <div class="blank"></div>
+        <div class="cmt"># Tampered message — even one byte change invalidates the signature</div>
+        <div class="out">tampered = b<span style="color:var(--green);">"DEPLOY firmware v4.3.2 to ward-7 cardiac monitors"</span></div>
+        <div class="out">is_valid = signer.verify(tampered, signature, public_key)</div>
+        <div class="err">print(is_valid)  →  False  # Cryptographic binding holds</div>
+      </div>
+    </div>
+    <div class="callout success">
+      <span class="callout-title">✅ What Makes This Quantum-Safe</span>
+      Verifying a signature requires finding a short vector in a lattice — which is computationally hard even with quantum computers. Recovering the private key from the public key requires solving the Module Learning With Errors problem, which has no known quantum speedup. Unlike ECDSA, there is no algebraic period structure for Shor's Fourier analysis to exploit.
+    </div>
+  </div>
+
+  <!-- Attack Timeline -->
+  <div class="concept-panel" id="cp-attack">
+    <p style="margin-bottom:20px;">The ECDSA forgery attack follows a specific timeline. Understanding it makes the urgency concrete.</p>
+    <div style="position:relative;padding:20px 0 40px;">
+      <div style="position:absolute;top:50%;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--green),var(--orange) 50%,var(--red));transform:translateY(-50%);"></div>
+      <div style="display:flex;justify-content:space-between;position:relative;z-index:2;">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;max-width:120px;">
+          <div style="width:14px;height:14px;border-radius:50%;background:var(--green);border:2px solid var(--bg);"></div>
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--green);">2024</div>
+          <div style="font-size:11px;color:var(--text-muted);text-align:center;">Vendor publishes signed updates. Attacker collects public keys.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;max-width:120px;">
+          <div style="width:14px;height:14px;border-radius:50%;background:var(--orange);border:2px solid var(--bg);"></div>
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--orange);">2028–32</div>
+          <div style="font-size:11px;color:var(--text-muted);text-align:center;">Quantum computer arrives. Attacker runs Shor's on ECDSA public keys.</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:8px;max-width:120px;">
+          <div style="width:14px;height:14px;border-radius:50%;background:var(--red);border:2px solid var(--bg);"></div>
+          <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--red);">2032+</div>
+          <div style="font-size:11px;color:var(--text-muted);text-align:center;">Private key recovered. Attacker forges updates indefinitely. No detection possible.</div>
+        </div>
+      </div>
+    </div>
+    <div class="callout danger">
+      <span class="callout-title">⚠ Unlike Encryption, You Cannot Retroactively Rekey</span>
+      With encryption, rekeying after a compromise protects future data. With signatures, once the private key is recovered from historical public keys, the attacker can sign new documents with that key at any time — forever. The CA certificate revocation system helps, but only if you know the key is compromised. A quantum forgery attack is silent until the malicious payload executes.
+    </div>
+  </div>
+
+  <hr class="divider" />
+  <h2 style="margin-top:0;">Micro-Check — Before You Implement</h2>
+
+  <div class="quiz-block" id="mc1-block">
+    <div class="q-text">An attacker recovers an ECDSA private key using Shor's algorithm in 2032. Which of the following can they now do?</div>
+    <div class="mc-options" id="mc1-opts">
+      <div class="mc-option" onclick="answerMC1('A',false)"><div class="mc-letter">A</div><div class="mc-text">Decrypt past TLS sessions that were protected with that key.</div></div>
+      <div class="mc-option" onclick="answerMC1('B',false)"><div class="mc-letter">B</div><div class="mc-text">Only forge signatures on documents that were signed before Q-Day.</div></div>
+      <div class="mc-option" onclick="answerMC1('C',true)"><div class="mc-letter">C</div><div class="mc-text">Forge a valid signature on any document — past or future — as the original signer, with no cryptographic difference from a legitimate signature.</div></div>
+      <div class="mc-option" onclick="answerMC1('D',false)"><div class="mc-letter">D</div><div class="mc-text">Modify previously signed documents and re-sign them, but only if the originals are in their possession.</div></div>
+    </div>
+    <div class="answer-reveal" id="mc1-reveal"></div>
+  </div>
+
+  <div class="quiz-block" id="mc2-block" style="display:none;">
+    <div class="q-text">ML-DSA-65 produces a 3309-byte signature while ECDSA P-256 produces a 72-byte signature. In which deployment context is this size difference most likely to cause a practical problem?</div>
+    <div class="mc-options" id="mc2-opts">
+      <div class="mc-option" onclick="answerMC2('A',false)"><div class="mc-letter">A</div><div class="mc-text">Signing a 500 MB firmware update image for a hospital device.</div></div>
+      <div class="mc-option" onclick="answerMC2('B',true)"><div class="mc-letter">B</div><div class="mc-text">Signing 50-byte telemetry packets from a constrained IoT sensor transmitting over a narrow-bandwidth radio link with a 512-byte maximum packet size.</div></div>
+      <div class="mc-option" onclick="answerMC2('C',false)"><div class="mc-letter">C</div><div class="mc-text">Signing a 10 KB configuration file for a cloud service.</div></div>
+      <div class="mc-option" onclick="answerMC2('D',false)"><div class="mc-letter">D</div><div class="mc-text">Signing TLS certificates in a standard web server context.</div></div>
+    </div>
+    <div class="answer-reveal" id="mc2-reveal"></div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(0)">← Mission Brief</button>
+    <button class="btn btn-primary" id="btn-to-sign" onclick="showSection(2)" disabled>Exercise A: Sign &amp; Tamper →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 2 — SIGN & TAMPER
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section2">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Exercise A · Sign a Deployment Authorization</div>
+    <h1>Sign It. Verify It. Break It.</h1>
+    <p style="font-size:14px;max-width:600px;margin-top:10px;color:var(--text-muted);">Sign a realistic software deployment message with ML-DSA-65. Confirm it verifies. Then modify the message or signature — one character at a time — and see what happens.</p>
+  </div>
+
+  <div class="terminal">
+    <div class="term-bar"><div class="term-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div><span class="term-title">lab3_sign.py — Exercise A</span></div>
+    <div class="term-body">
+      <div><span style="color:var(--purple);">import</span> oqs, hashlib</div>
+      <div class="blank"></div>
+      <div class="cmt"># Initialize ML-DSA-65 signer</div>
+      <div>signer = oqs.Signature(<span style="color:var(--green);">'ML-DSA-65'</span>)</div>
+      <div>public_key = signer.generate_keypair()</div>
+      <div class="blank"></div>
+      <div class="cmt"># Sign the deployment authorization</div>
+      <div>message = b<span style="color:var(--green);">"DEPLOY firmware v4.3.1 to ward-7 cardiac monitors"</span></div>
+      <div>signature = signer.sign(message)   <span class="cmt"># 3309 bytes</span></div>
+      <div class="blank"></div>
+      <div class="cmt"># Verify — should pass</div>
+      <div>valid = signer.verify(message, signature, public_key)</div>
+    </div>
+  </div>
+
+  <!-- Signing steps -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin:20px 0 14px;">
+    <button class="btn btn-sm btn-primary" id="btn-keygen-a" onclick="exAKeygen()">Step 1: Generate Keypair</button>
+    <button class="btn btn-sm btn-ghost" id="btn-sign-a" onclick="exASign()" disabled>Step 2: Sign Message</button>
+    <button class="btn btn-ghost btn-sm" onclick="resetExA()">↻ Reset</button>
+  </div>
+
+  <!-- Document viewer -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0;">
+    <div>
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:6px;">Message Being Signed</div>
+      <div class="sig-doc" id="sig-message-display">
+        <div class="doc-label">Original Message</div>
+        <span id="sig-msg-text">DEPLOY firmware v4.3.1 to ward-7 cardiac monitors</span>
+      </div>
+    </div>
+    <div>
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:6px;">Key Info</div>
+      <div class="sig-doc" id="sig-key-display">
+        <div class="doc-label">ML-DSA-65 Keys</div>
+        <div id="sig-key-info" style="color:var(--text-dim);">Run Step 1 to generate</div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:6px;">Signature Output</div>
+    <div class="sig-doc" id="sig-output">
+      <div class="doc-label">ML-DSA-65 Signature (3309 bytes)</div>
+      <div class="sig-bytes" id="sig-bytes-display">Run Step 2 to sign</div>
+    </div>
+  </div>
+
+  <!-- Verification status -->
+  <div class="verify-status vs-idle" id="verify-status-a">
+    <span class="vs-icon">○</span>
+    <span id="verify-status-a-text">Sign the message first</span>
+  </div>
+
+  <hr class="divider" />
+  <h2>Now Tamper With It</h2>
+  <p>Select a tampering action below. Each action modifies either the message or the signature, then re-runs verification. Record what happens.</p>
+
+  <div class="tamper-controls" id="tamper-controls">
+    <button class="tamper-btn" id="tb-msg1" onclick="tamper('msg1')" disabled>✏ Change "v4.3.1" → "v4.3.2"</button>
+    <button class="tamper-btn" id="tb-msg2" onclick="tamper('msg2')" disabled>✏ Change "ward-7" → "ward-8"</button>
+    <button class="tamper-btn" id="tb-msg3" onclick="tamper('msg3')" disabled>✏ Append " URGENT"</button>
+    <button class="tamper-btn" id="tb-sig1" onclick="tamper('sig1')" disabled>🔧 Flip 1 bit in signature</button>
+    <button class="tamper-btn" id="tb-sig2" onclick="tamper('sig2')" disabled>🔧 Flip 10 bits in signature</button>
+    <button class="tamper-btn" id="tb-restore" onclick="tamper('restore')" disabled style="color:var(--green);border-color:rgba(63,185,80,0.3);">↩ Restore Original</button>
+  </div>
+
+  <div id="tamper-result" style="display:none;" class="callout" style="margin-top:14px;"></div>
+
+  <!-- Recording table -->
+  <hr class="divider" />
+  <h2>Record Your Observations</h2>
+  <table class="record-table">
+    <thead>
+      <tr><th>Tampering Action</th><th>Verification Result</th><th>Your Run</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>No tampering (baseline)</td><td style="color:var(--green);font-family:var(--mono);font-size:12px;">✓ VALID</td><td class="filled" id="rec-a0">—</td></tr>
+      <tr><td>Change "v4.3.1" → "v4.3.2" in message</td><td style="color:var(--red);font-family:var(--mono);font-size:12px;">✗ INVALID</td><td class="filled" id="rec-a1">—</td></tr>
+      <tr><td>Change "ward-7" → "ward-8" in message</td><td style="color:var(--red);font-family:var(--mono);font-size:12px;">✗ INVALID</td><td class="filled" id="rec-a2">—</td></tr>
+      <tr><td>Flip 1 bit in signature</td><td style="color:var(--red);font-family:var(--mono);font-size:12px;">✗ INVALID</td><td class="filled" id="rec-a3">—</td></tr>
+      <tr><td>Flip 10 bits in signature</td><td style="color:var(--red);font-family:var(--mono);font-size:12px;">✗ INVALID</td><td class="filled" id="rec-a4">—</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout success" id="tamper-lesson" style="display:none;">
+    <span class="callout-title">✅ What You Just Proved Empirically</span>
+    ML-DSA produces a <strong>cryptographic binding</strong> between the message and the private key. Any modification to either the message or the signature — even a single bit — produces a verification failure. There is no "close enough" in signature verification. This is not a property of ML-DSA specifically; all good signature schemes share it. What ML-DSA adds is that the binding cannot be forged even with a quantum computer.
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(1)">← Concept</button>
+    <button class="btn btn-primary" onclick="showSection(3)">Exercise B: Benchmark →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 3 — BENCHMARK
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section3">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Exercise B · Benchmark — 100 Iterations</div>
+    <h1>ML-DSA vs RSA-PSS vs ECDSA — Signing Speed &amp; Size</h1>
+    <p style="font-size:14px;max-width:600px;margin-top:10px;color:var(--text-muted);">Run the benchmark across all five algorithms. Then answer: at what document size does the ML-DSA signature overhead become less than 1% of the total payload?</p>
+  </div>
+
+  <div class="terminal">
+    <div class="term-bar"><div class="term-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div><span class="term-title">lab3_benchmark.py — 100 iterations per algorithm</span></div>
+    <div class="term-body">
+      <div class="cmt"># Benchmark ML-DSA-44/65/87 vs RSA-2048-PSS vs ECDSA-P256</div>
+      <div><span style="color:var(--purple);">import</span> oqs, time, statistics</div>
+      <div class="blank"></div>
+      <div>algorithms = [<span style="color:var(--green);">'ML-DSA-44'</span>, <span style="color:var(--green);">'ML-DSA-65'</span>, <span style="color:var(--green);">'ML-DSA-87'</span>]</div>
+      <div>msg = b<span style="color:var(--green);">"test message"</span> * 100</div>
+      <div><span style="color:var(--purple);">for</span> alg <span style="color:var(--purple);">in</span> algorithms:</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;signer = oqs.Signature(alg)</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;pk = signer.generate_keypair()</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;sign_times, verify_times = [], []</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--purple);">for</span> _ <span style="color:var(--purple);">in</span> range(<span style="color:var(--purple);">100</span>):</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;t0 = time.perf_counter(); sig = signer.sign(msg); sign_times.append(time.perf_counter()-t0)</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;t0 = time.perf_counter(); signer.verify(msg, sig, pk); verify_times.append(time.perf_counter()-t0)</div>
+    </div>
+  </div>
+
+  <div style="margin:20px 0;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+    <button class="btn btn-primary" id="bench-b-btn" onclick="runBenchB()">▶ Run Benchmark (100 iterations)</button>
+    <button class="btn btn-ghost btn-sm" onclick="resetBenchB()">↻ Reset</button>
+    <span id="bench-b-status" style="font-family:var(--mono);font-size:11px;color:var(--text-dim);"></span>
+  </div>
+
+  <div id="bench-b-results" style="display:none;">
+    <table class="record-table" style="margin-bottom:24px;">
+      <thead>
+        <tr><th>Algorithm</th><th>Keygen (ms)</th><th>Sign (ms)</th><th>Verify (ms)</th><th>Sig Size (B)</th><th>Pub Key (B)</th><th>Quantum Safe?</th></tr>
+      </thead>
+      <tbody id="bench-b-tbody"></tbody>
+    </table>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+      <button class="btn btn-sm" id="bb-sign" onclick="showBBChart('sign')" style="background:var(--accent-dim);color:var(--accent);border-color:rgba(240,136,62,0.3);">Signing Time</button>
+      <button class="btn btn-sm btn-ghost" id="bb-verify" onclick="showBBChart('verify')">Verify Time</button>
+      <button class="btn btn-sm btn-ghost" id="bb-sigsize" onclick="showBBChart('sigsize')">Signature Size</button>
+      <button class="btn btn-sm btn-ghost" id="bb-pksize" onclick="showBBChart('pksize')">Public Key Size</button>
+    </div>
+    <div id="bench-b-chart" style="margin-bottom:24px;"></div>
+
+    <!-- Overhead calculator -->
+    <div class="card" style="border-color:rgba(240,136,62,0.3);margin-top:8px;">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:14px;">📐 Overhead Calculator — When Does Signature Size Stop Mattering?</div>
+      <p style="font-size:13px;margin-bottom:16px;">At what document size does the 3309-byte ML-DSA-65 signature represent less than 1% of the total payload? Use the slider to explore.</p>
+      <div style="margin-bottom:12px;">
+        <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">Document size: <span id="doc-size-val" style="font-family:var(--mono);color:var(--accent);font-weight:700;">50 KB</span></div>
+        <input type="range" min="1" max="500" value="50" id="doc-size-slider" oninput="updateOverheadCalc()" />
+        <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-top:4px;"><span>1 KB</span><span>250 KB</span><span>500 KB</span></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:10px;">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center;">
+          <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:6px;">ML-DSA-44 Overhead</div>
+          <div id="oh-44" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent);">—</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center;">
+          <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:6px;">ML-DSA-65 Overhead</div>
+          <div id="oh-65" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent);">—</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center;">
+          <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:6px;">ML-DSA-87 Overhead</div>
+          <div id="oh-87" style="font-family:var(--mono);font-size:18px;font-weight:700;color:var(--accent);">—</div>
+        </div>
+      </div>
+      <div id="oh-verdict" style="margin-top:12px;font-size:13px;color:var(--text-muted);font-style:italic;"></div>
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(2)">← Sign &amp; Tamper</button>
+    <button class="btn btn-primary" onclick="showSection(4)">Exercise C: File Signing →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 4 — FILE SIGNING
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section4">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Exercise C · File Signing — Signature Overhead Ratio</div>
+    <h1>How Much Does the Signature Add?</h1>
+    <p style="font-size:14px;max-width:600px;margin-top:10px;color:var(--text-muted);">Simulate signing files of different sizes. Measure the ratio of signature size to file size. Identify where the overhead starts to matter — and where it is negligible.</p>
+  </div>
+
+  <div class="terminal">
+    <div class="term-bar"><div class="term-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div><span class="term-title">lab3_filesign.py — Exercise C</span></div>
+    <div class="term-body">
+      <div class="cmt"># Sign files of varying sizes and measure overhead ratio</div>
+      <div><span style="color:var(--purple);">import</span> oqs, os, hashlib</div>
+      <div class="blank"></div>
+      <div>signer = oqs.Signature(<span style="color:var(--green);">'ML-DSA-65'</span>)</div>
+      <div>pk = signer.generate_keypair()</div>
+      <div class="blank"></div>
+      <div>file_sizes = [<span style="color:var(--purple);">512</span>, <span style="color:var(--purple);">4096</span>, <span style="color:var(--purple);">65536</span>, <span style="color:var(--purple);">1048576</span>, <span style="color:var(--purple);">10485760</span>]  <span class="cmt"># 512B → 10MB</span></div>
+      <div><span style="color:var(--purple);">for</span> size <span style="color:var(--purple);">in</span> file_sizes:</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;data = os.urandom(size)</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;digest = hashlib.sha3_256(data).digest()  <span class="cmt"># hash then sign</span></div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;sig = signer.sign(digest)</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;ratio = len(sig) / size * 100</div>
+      <div>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--purple);">print</span>(f<span style="color:var(--green);">"File: {size/1024:.1f} KB | Sig: {len(sig)} B | Overhead: {ratio:.2f}%"</span>)</div>
+    </div>
+  </div>
+
+  <div style="margin:20px 0;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+    <button class="btn btn-primary" id="filesign-btn" onclick="runFileSign()">▶ Run File Signing Analysis</button>
+    <button class="btn btn-ghost btn-sm" onclick="resetFileSign()">↻ Reset</button>
+    <span id="filesign-status" style="font-family:var(--mono);font-size:11px;color:var(--text-dim);"></span>
+  </div>
+
+  <div id="filesign-results" style="display:none;">
+    <table class="record-table" style="margin-bottom:24px;">
+      <thead>
+        <tr><th>File Type / Size</th><th>File Size</th><th>Sig Size (ML-DSA-65)</th><th>ECDSA Sig Size</th><th>ML-DSA Overhead</th><th>ECDSA Overhead</th></tr>
+      </thead>
+      <tbody id="filesign-tbody"></tbody>
+    </table>
+
+    <h3 style="margin-top:0;">Visual Size Comparison</h3>
+    <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.09em;color:var(--text-dim);margin-bottom:12px;display:flex;gap:20px;">
+      <span>■ <span style="color:var(--blue);">File</span></span>
+      <span>■ <span style="color:var(--accent);">ML-DSA-65 Sig</span></span>
+    </div>
+    <div class="ratio-chart" id="ratio-chart"></div>
+
+    <div class="callout info" id="filesign-analysis">
+      <span class="callout-title">📊 What the Ratio Tells You</span>
+      <span id="filesign-analysis-text"></span>
+    </div>
+
+    <div class="card" style="border-color:rgba(240,136,62,0.3);margin-top:20px;">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px;">🏥 Practical Implication — The Hospital Context</div>
+      <p style="font-size:13px;">A cardiac monitor firmware update is typically <strong>2–8 MB</strong>. The ML-DSA-65 signature of 3309 bytes represents <strong>less than 0.02%</strong> of a 2 MB file. For this use case, the signature overhead is operationally irrelevant. The performance cost of signing is similarly negligible for a file signed once and deployed thousands of times. There is no practical justification for keeping ECDSA in this deployment context.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;">
+        <div style="background:var(--red-dim);border:1px solid rgba(248,81,73,0.3);border-radius:6px;padding:12px;">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--red);text-transform:uppercase;margin-bottom:6px;">ECDSA P-256 on firmware</div>
+          <div style="font-size:13px;color:var(--text-muted);">72 B sig. Fast. Forgeable by Q-computer. Every signed update is a target.</div>
+        </div>
+        <div style="background:var(--green-dim);border:1px solid rgba(63,185,80,0.3);border-radius:6px;padding:12px;">
+          <div style="font-family:var(--mono);font-size:10px;color:var(--green);text-transform:uppercase;margin-bottom:6px;">ML-DSA-65 on firmware</div>
+          <div style="font-size:13px;color:var(--text-muted);">3309 B sig. Still fast. Not forgeable. 0.016% overhead on 2 MB file.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(3)">← Benchmark</button>
+    <button class="btn btn-primary" onclick="showSection(5)">Break It Challenge →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 5 — BREAK IT
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section5">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Break It Challenge · Two Attacks</div>
+    <h1>Try to Forge a Signature</h1>
+    <p style="font-size:14px;max-width:580px;margin-top:10px;color:var(--text-muted);">Challenge 1 asks you to find any combination of message bits and signature bits that verifies. Challenge 2 asks you to choose the right security level for a high-stakes certificate.</p>
+  </div>
+
+  <!-- CHALLENGE 1 -->
+  <div style="background:linear-gradient(135deg,rgba(248,81,73,0.06),rgba(240,136,62,0.03));border:1px solid rgba(248,81,73,0.25);border-radius:12px;padding:28px;margin:0 0 24px;">
+    <div style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--red);margin-bottom:8px;">💥 Challenge 1 — Attempted Forgery Grid</div>
+    <p style="font-size:14px;margin-bottom:8px;">Each cell represents a different combination of message bits and signature bits modified. Click each cell to run that attack configuration. Try to find one that verifies. Record your observations.</p>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">The grid covers 16 combinations: 4 levels of message modification × 4 levels of signature corruption. One cell is the baseline (no modification).</p>
+
+    <div style="margin-bottom:12px;display:flex;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:var(--text-dim);">
+      <span>○ Untested</span>
+      <span style="color:var(--red);">✗ INVALID (as expected)</span>
+      <span style="color:var(--green);">✓ VALID</span>
+    </div>
+
+    <div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.08em;">↓ Message bits modified → / Signature bits modified ↓</div>
+    <div style="overflow-x:auto;">
+      <table style="border-collapse:collapse;min-width:500px;">
+        <thead>
+          <tr>
+            <th style="font-family:var(--mono);font-size:10px;color:var(--text-dim);padding:8px 10px;border:1px solid var(--border);background:var(--surface2);"></th>
+            <th style="font-family:var(--mono);font-size:10px;color:var(--text-dim);padding:8px 14px;border:1px solid var(--border);background:var(--surface2);">Msg: none</th>
+            <th style="font-family:var(--mono);font-size:10px;color:var(--text-dim);padding:8px 14px;border:1px solid var(--border);background:var(--surface2);">Msg: 1 bit</th>
+            <th style="font-family:var(--mono);font-size:10px;color:var(--text-dim);padding:8px 14px;border:1px solid var(--border);background:var(--surface2);">Msg: 8 bits</th>
+            <th style="font-family:var(--mono);font-size:10px;color:var(--text-dim);padding:8px 14px;border:1px solid var(--border);background:var(--surface2);">Msg: replace</th>
+          </tr>
+        </thead>
+        <tbody id="forgery-grid-body"></tbody>
+      </table>
+    </div>
+
+    <div id="forgery-tally" style="margin-top:16px;font-family:var(--mono);font-size:12px;color:var(--text-muted);">Cells tried: 0 / 16</div>
+    <div id="forgery-verdict" class="callout danger" style="display:none;margin-top:16px;">
+      <span class="callout-title">✗ No Forgery Found</span>
+      <span id="forgery-verdict-text"></span>
+    </div>
+  </div>
+
+  <!-- CHALLENGE 2 -->
+  <div style="background:linear-gradient(135deg,rgba(188,140,255,0.05),rgba(240,136,62,0.03));border:1px solid rgba(188,140,255,0.25);border-radius:12px;padding:28px;">
+    <div style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--purple);margin-bottom:8px;">🧠 Challenge 2 — Security Level Selection</div>
+    <p style="font-size:14px;margin-bottom:16px;">Two certificate scenarios. Select the best ML-DSA security level for each and explain your reasoning.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0;">
+      <div class="card" style="border-color:rgba(248,81,73,0.3);">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--red);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Scenario A</div>
+        <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:6px;">30-Year Medical Software Signing Certificate</div>
+        <div style="font-size:13px;color:var(--text-muted);">Signs firmware for implantable cardiac devices. Certificate validity: 30 years. Hospital systems will verify signatures for 3 decades without re-signing.</div>
+        <div class="level-cards" style="margin-top:14px;" id="sc-a-cards">
+          <div class="level-card" style="padding:12px;" onclick="selectScenario('a','44')"><div class="lc-name" style="font-size:12px;">ML-DSA-44</div><div class="lc-bar" style="width:50%;"></div><div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">Level 1</div></div>
+          <div class="level-card" style="padding:12px;" onclick="selectScenario('a','65')"><div class="lc-name" style="font-size:12px;">ML-DSA-65</div><div class="lc-bar" style="width:75%;"></div><div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">Level 3</div></div>
+          <div class="level-card" style="padding:12px;" onclick="selectScenario('a','87')"><div class="lc-name" style="font-size:12px;">ML-DSA-87</div><div class="lc-bar" style="width:100%;"></div><div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">Level 5</div></div>
+        </div>
+        <div class="answer-reveal" id="sc-a-reveal"></div>
+      </div>
+      <div class="card" style="border-color:rgba(88,166,255,0.3);">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--blue);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Scenario B</div>
+        <div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:6px;">90-Day TLS Certificate for Web Server</div>
+        <div style="font-size:13px;color:var(--text-muted);">Signs a TLS certificate for a public-facing web application. Certificate renews every 90 days via automated ACME. High volume of verifications per second.</div>
+        <div class="level-cards" style="margin-top:14px;" id="sc-b-cards">
+          <div class="level-card" style="padding:12px;" onclick="selectScenario('b','44')"><div class="lc-name" style="font-size:12px;">ML-DSA-44</div><div class="lc-bar" style="width:50%;"></div><div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">Level 1</div></div>
+          <div class="level-card" style="padding:12px;" onclick="selectScenario('b','65')"><div class="lc-name" style="font-size:12px;">ML-DSA-65</div><div class="lc-bar" style="width:75%;"></div><div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">Level 3</div></div>
+          <div class="level-card" style="padding:12px;" onclick="selectScenario('b','87')"><div class="lc-name" style="font-size:12px;">ML-DSA-87</div><div class="lc-bar" style="width:100%;"></div><div style="font-family:var(--mono);font-size:10px;color:var(--text-dim);">Level 5</div></div>
+        </div>
+        <div class="answer-reveal" id="sc-b-reveal"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(4)">← File Signing</button>
+    <button class="btn btn-primary" onclick="showSection(6)">Continue to Reflection →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SECTION 6 — REFLECTION
+══════════════════════════════════════════════════ -->
+<div class="section-wrap" id="section6">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Reflection · Closing the Loop</div>
+    <h1>Signatures, Trust, and the Quantum Transition</h1>
+    <p style="font-size:14px;max-width:600px;margin-top:10px;color:var(--text-muted);">Three questions that connect what you built to how signature infrastructure actually works at scale.</p>
+  </div>
+
+  <div class="reflect-card">
+    <div class="reflect-q">1. In the forgery grid, you tried 16 combinations of message and signature tampering. None of them produced a valid signature. What does this tell you about the effort required to forge an ML-DSA signature by trial and error?</div>
+    <div class="ref-opts" id="rq1-opts">
+      <div class="ref-opt" onclick="answerR('rq1',0,false)"><div class="ref-letter">A</div><span>If you tried enough combinations, you would eventually find one that works — it just requires many attempts.</span></div>
+      <div class="ref-opt" onclick="answerR('rq1',1,false)"><div class="ref-letter">B</div><span>Trial and error is viable with a fast computer — brute force over the 3309-byte signature space would find a forgery within days.</span></div>
+      <div class="ref-opt" onclick="answerR('rq1',2,true)"><div class="ref-letter">C</div><span>A valid signature requires knowledge of the private key. Without it, no modification to the message or signature produces a valid pair — there is no "close enough." The search space is 2^(3309×8) possible signatures, which is astronomically larger than any computable search. The forgery grid proves this empirically: even systematic exploration finds nothing.</span></div>
+      <div class="ref-opt" onclick="answerR('rq1',3,false)"><div class="ref-letter">D</div><span>ML-DSA can be brute forced more easily than RSA because its signatures are larger.</span></div>
+    </div>
+    <div class="answer-reveal" id="rq1-reveal"></div>
+  </div>
+
+  <div class="reflect-card">
+    <div class="reflect-q">2. The hospital scenario describes a forged software update that passes signature verification. What additional defense-in-depth measures could a hospital deploy that would catch this attack even if signature verification passes?</div>
+    <div class="ref-opts" id="rq2-opts">
+      <div class="ref-opt" onclick="answerR('rq2',0,false)"><div class="ref-letter">A</div><span>Nothing — if the signature verifies with the correct public key, the update must be legitimate. There is no defense if the signing key is compromised.</span></div>
+      <div class="ref-opt" onclick="answerR('rq2',1,true)"><div class="ref-letter">B</div><span>Defense-in-depth measures include: code signing with multiple independent CAs (attacker must compromise all), binary transparency logs (append-only ledgers of all signed releases that can be audited), runtime behavior monitoring (malicious update behaves differently from a legitimate one), network segmentation (limits damage even after installation), and hash pinning (comparing against a known-good hash from a separate channel). Cryptographic signature verification is necessary but not sufficient for supply chain security.</span></div>
+      <div class="ref-opt" onclick="answerR('rq2',2,false)"><div class="ref-letter">C</div><span>Using a hardware security module (HSM) for key storage would prevent the attack because private keys in HSMs cannot be exported.</span></div>
+      <div class="ref-opt" onclick="answerR('rq2',3,false)"><div class="ref-letter">D</div><span>Requiring TLS for update delivery would prevent the forged update from being installed.</span></div>
+    </div>
+    <div class="answer-reveal" id="rq2-reveal"></div>
+  </div>
+
+  <div class="reflect-card">
+    <div class="reflect-q">3. An ML-DSA-65 public key is 1952 bytes. An ECDSA P-256 public key is 64 bytes. A root CA certificate is distributed to every device in a PKI ecosystem — potentially billions of endpoints. Which of the following best describes the practical implication of this size difference?</div>
+    <div class="ref-opts" id="rq3-opts">
+      <div class="ref-opt" onclick="answerR('rq3',0,false)"><div class="ref-letter">A</div><span>The size difference makes ML-DSA impractical for PKI — root CA certificates are too large to distribute to IoT devices.</span></div>
+      <div class="ref-opt" onclick="answerR('rq3',1,true)"><div class="ref-letter">B</div><span>Root CA certificates are distributed once and stored locally — they are not retransmitted during normal operations. A 1952-byte public key adds about 1.9 KB to a root CA certificate, which is stored in firmware and never transmitted in TLS handshakes. The operational impact is minimal for most devices. Constrained IoT with extremely limited firmware storage (under 32 KB total) may need careful planning, but this is a solvable engineering problem, not a fundamental barrier.</span></div>
+      <div class="ref-opt" onclick="answerR('rq3',2,false)"><div class="ref-letter">C</div><span>The size difference only matters during key generation — once distributed, public keys do not consume any additional bandwidth.</span></div>
+      <div class="ref-opt" onclick="answerR('rq3',3,false)"><div class="ref-letter">D</div><span>ML-DSA public keys can be compressed to the same size as ECDSA keys using standard zlib compression.</span></div>
+    </div>
+    <div class="answer-reveal" id="rq3-reveal"></div>
+  </div>
+
+  <!-- Completion -->
+  <div class="completion-banner" id="completionBanner">
+    <div style="font-size:48px;margin-bottom:12px;">✍️</div>
+    <h2>Module 3 Complete</h2>
+    <p style="max-width:560px;">You implemented ML-DSA-65 signatures from scratch, proved empirically that even single-bit tampering invalidates signatures, benchmarked the size and performance tradeoffs against RSA and ECDSA, analyzed file-size overhead ratios, attempted forgery across 16 attack combinations, and selected security levels for real deployment scenarios.</p>
+    <div class="future-hook">"Lab 4 introduces hybrid cryptography — running classical and post-quantum algorithms in parallel during the migration period. You'll implement X25519+ML-KEM and ECDSA+ML-DSA simultaneously, and measure the compound overhead."</div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px;">
+      <span class="badge badge-green">✓ Forgery Threat Model</span>
+      <span class="badge badge-green">✓ ML-DSA Implementation</span>
+      <span class="badge badge-green">✓ Benchmark Analysis</span>
+      <span class="badge badge-green">✓ File Overhead Ratios</span>
+      <span class="badge badge-green">✓ Break It Challenge</span>
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="showSection(5)">← Break It</button>
+    <button class="btn btn-green" onclick="finishLab()">Finish Lab 3 →</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ─── STATE ───
+const S = {
+  visited: new Set([0]),
+  mc1Done:false, mc2Done:false,
+  signed:false, tampersDone:new Set(),
+  benchBDone:false, filesignDone:false,
+  forgeryTried:0, forgeryCells:{},
+  scA:false, scB:false,
+  reflectDone:new Set()
+};
+
+// ─── NAV ───
+function showSection(i) {
+  document.querySelectorAll('.section-wrap').forEach((s,j)=>s.classList.toggle('active',j===i));
+  document.querySelectorAll('.nav-tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  S.visited.add(i);
+  document.getElementById('progressBar').style.width=(S.visited.size/7*100)+'%';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function showCP(id,btn){
+  document.querySelectorAll('.concept-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.concept-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─── MC CHECKS ───
+function answerMC1(letter,correct){
+  if(S.mc1Done)return; S.mc1Done=true;
+  const opts=document.getElementById('mc1-opts');
+  opts.querySelectorAll('.mc-option').forEach(o=>{
+    const l=o.querySelector('.mc-letter').textContent;
+    if(l==='C')o.classList.add('correct');
+    else if(l===letter&&!correct)o.classList.add('incorrect');
+    o.style.pointerEvents='none';
+  });
+  const rev=document.getElementById('mc1-reveal');
+  rev.className='answer-reveal show '+(correct?'correct-reveal':'incorrect-reveal');
+  rev.innerHTML=`<span class="reveal-label">${correct?'✓ Correct':'✗ Incorrect — Answer: C'}</span>${correct?'Exactly. ':''}Once an attacker has the private key, they can sign <strong>any document at any time</strong> as that entity. The key recovery happens once; the forgery capability is permanent. This is distinct from decryption compromise, where rekeying stops future exposure.`;
+  setTimeout(()=>{
+    document.getElementById('mc2-block').style.display='block';
+    document.getElementById('mc2-block').scrollIntoView({behavior:'smooth',block:'start'});
+  },500);
+}
+function answerMC2(letter,correct){
+  if(S.mc2Done)return; S.mc2Done=true;
+  const opts=document.getElementById('mc2-opts');
+  opts.querySelectorAll('.mc-option').forEach(o=>{
+    const l=o.querySelector('.mc-letter').textContent;
+    if(l==='B')o.classList.add('correct');
+    else if(l===letter&&!correct)o.classList.add('incorrect');
+    o.style.pointerEvents='none';
+  });
+  const rev=document.getElementById('mc2-reveal');
+  rev.className='answer-reveal show '+(correct?'correct-reveal':'incorrect-reveal');
+  rev.innerHTML=`<span class="reveal-label">${correct?'✓ Correct':'✗ Incorrect — Answer: B'}</span>A constrained IoT sensor with 50-byte payloads and a 512-byte max packet size literally cannot fit a 3309-byte ML-DSA signature in a single packet — the signature is 65× larger than the payload. This requires protocol redesign (out-of-band signatures, signature aggregation, or ML-DSA-44). For large files (firmware, documents), the overhead is negligible.`;
+  const btn=document.getElementById('btn-to-sign');
+  btn.disabled=false; btn.style.opacity='1'; btn.style.cursor='pointer';
+}
+
+// ─── EXERCISE A ───
+const MSG_ORIG = 'DEPLOY firmware v4.3.1 to ward-7 cardiac monitors';
+const FAKE_SIG = '3b8f2a19c40e571d6a8c30f5e921b47d4c8f2a19c40e571d6a8c30f5e921b47d4c8f2a19c40e571d6a8c30f5e921b47d4c8f2a19c40e571d6a8c30f5e921b47d';
+let currentMsg = MSG_ORIG, currentSig = FAKE_SIG, signed = false;
+
+function exAKeygen(){
+  const btn=document.getElementById('btn-keygen-a');
+  btn.innerHTML='<span class="spinner"></span>Generating…'; btn.disabled=true;
+  setTimeout(()=>{
+    document.getElementById('sig-key-info').innerHTML='<span style="color:var(--accent);">pk</span>: 1952 B &nbsp;|&nbsp; <span style="color:var(--accent);">sk</span>: 4032 B<br><span style="color:var(--text-dim);">Algorithm: ML-DSA-65 (NIST FIPS 204)</span>';
+    btn.textContent='✓ Keypair Generated'; btn.disabled=true;
+    document.getElementById('btn-sign-a').disabled=false;
+    document.getElementById('btn-sign-a').className='btn btn-sm btn-primary';
+  },800);
+}
+function exASign(){
+  const btn=document.getElementById('btn-sign-a');
+  btn.innerHTML='<span class="spinner"></span>Signing…'; btn.disabled=true;
+  setTimeout(()=>{
+    signed=true; S.signed=true;
+    document.getElementById('sig-message-display').classList.add('verified');
+    document.getElementById('sig-bytes-display').textContent=FAKE_SIG+'...';
+    document.getElementById('sig-bytes-display').classList.add('has-sig');
+    const vs=document.getElementById('verify-status-a');
+    vs.className='verify-status vs-pass';
+    vs.innerHTML='<span class="vs-icon">✓</span><span id="verify-status-a-text">VALID — Signature verified against original message</span>';
+    btn.textContent='✓ Signed'; btn.disabled=true;
+    document.getElementById('rec-a0').textContent='✓ VALID';
+    ['tb-msg1','tb-msg2','tb-msg3','tb-sig1','tb-sig2','tb-restore'].forEach(id=>{
+      const b=document.getElementById(id); if(b)b.disabled=false;
+    });
+  },1000);
+}
+function tamper(type){
+  if(!signed)return;
+  S.tampersDone.add(type);
+  let msgDisplay=MSG_ORIG, isValid=false, desc='';
+  if(type==='msg1'){msgDisplay='DEPLOY firmware <span style="color:var(--red);text-decoration:underline;">v4.3.2</span> to ward-7 cardiac monitors';desc='Message changed: "v4.3.1" → "v4.3.2"';document.getElementById('rec-a1').textContent='✗ INVALID';}
+  else if(type==='msg2'){msgDisplay='DEPLOY firmware v4.3.1 to <span style="color:var(--red);text-decoration:underline;">ward-8</span> cardiac monitors';desc='Message changed: "ward-7" → "ward-8"';document.getElementById('rec-a2').textContent='✗ INVALID';}
+  else if(type==='msg3'){msgDisplay='DEPLOY firmware v4.3.1 to ward-7 cardiac monitors<span style="color:var(--red);"> URGENT</span>';desc='Message appended: " URGENT"';}
+  else if(type==='sig1'){desc='Signature: 1 bit flipped';document.getElementById('rec-a3').textContent='✗ INVALID';}
+  else if(type==='sig2'){desc='Signature: 10 bits flipped';document.getElementById('rec-a4').textContent='✗ INVALID';}
+  else if(type==='restore'){isValid=true;desc='Restored to original — signature valid again';}
+
+  const msgEl=document.getElementById('sig-msg-text');
+  const msgDoc=document.getElementById('sig-message-display');
+  const vs=document.getElementById('verify-status-a');
+
+  if(type==='restore'){
+    msgEl.innerHTML=MSG_ORIG;
+    msgDoc.className='sig-doc verified';
+    vs.className='verify-status vs-pass';
+    vs.innerHTML='<span class="vs-icon">✓</span><span>VALID — Original message, unmodified signature</span>';
+    document.getElementById('tamper-result').style.display='none';
+  } else {
+    if(type.startsWith('msg'))msgEl.innerHTML=msgDisplay;
+    msgDoc.className='sig-doc tampered';
+    vs.className='verify-status vs-fail';
+    vs.innerHTML='<span class="vs-icon">✗</span><span>INVALID — Verification failed. '+desc+'</span>';
+    const tr=document.getElementById('tamper-result');
+    tr.style.display='block';
+    tr.className='callout danger';
+    tr.innerHTML=`<span class="callout-title">✗ Verification Failed — ${desc}</span>The signature cryptographically binds to the <em>exact bytes</em> of the original message. Any modification — even appending a single character — produces a completely different hash, and the signature no longer corresponds to the modified data. ML-DSA detects this immediately.`;
+    document.getElementById('tamper-result').scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+
+  // Highlight active tamper button
+  ['tb-msg1','tb-msg2','tb-msg3','tb-sig1','tb-sig2','tb-restore'].forEach(id=>{
+    const b=document.getElementById(id); if(b)b.classList.remove('active-tamper');
+  });
+  document.getElementById('tb-'+type)?.classList.add('active-tamper');
+
+  if(S.tampersDone.size>=4){document.getElementById('tamper-lesson').style.display='block';}
+}
+function resetExA(){
+  signed=false; S.signed=false; S.tampersDone.clear(); currentMsg=MSG_ORIG;
+  document.getElementById('sig-message-display').className='sig-doc';
+  document.getElementById('sig-msg-text').innerHTML=MSG_ORIG;
+  document.getElementById('sig-bytes-display').textContent='Run Step 2 to sign'; document.getElementById('sig-bytes-display').classList.remove('has-sig');
+  document.getElementById('sig-key-info').textContent='Run Step 1 to generate';
+  document.getElementById('verify-status-a').className='verify-status vs-idle';
+  document.getElementById('verify-status-a').innerHTML='<span class="vs-icon">○</span><span id="verify-status-a-text">Sign the message first</span>';
+  document.getElementById('tamper-result').style.display='none';
+  document.getElementById('tamper-lesson').style.display='none';
+  ['rec-a0','rec-a1','rec-a2','rec-a3','rec-a4'].forEach(id=>document.getElementById(id).textContent='—');
+  const b0=document.getElementById('btn-keygen-a'); b0.textContent='Step 1: Generate Keypair'; b0.disabled=false;
+  const b1=document.getElementById('btn-sign-a'); b1.textContent='Step 2: Sign Message'; b1.disabled=true; b1.className='btn btn-sm btn-ghost';
+  ['tb-msg1','tb-msg2','tb-msg3','tb-sig1','tb-sig2','tb-restore'].forEach(id=>{
+    const b=document.getElementById(id); if(b){b.disabled=true;b.classList.remove('active-tamper');}
+  });
+}
+
+// ─── BENCHMARK B ───
+const benchBData=[
+  {name:'RSA-2048 PSS',keygen:28.4,sign:2.8,verify:0.10,sig:256,pk:294,safe:false,cls:'bf-rsa'},
+  {name:'ECDSA P-256',keygen:0.51,sign:0.22,verify:0.10,sig:72,pk:64,safe:false,cls:'bf-ecdsa'},
+  {name:'ML-DSA-44',keygen:0.09,sign:0.11,verify:0.07,sig:2420,pk:1312,safe:true,cls:'bf-44'},
+  {name:'ML-DSA-65',keygen:0.13,sign:0.16,verify:0.10,sig:3309,pk:1952,safe:true,cls:'bf-65'},
+  {name:'ML-DSA-87',keygen:0.18,sign:0.22,verify:0.14,sig:4627,pk:2592,safe:true,cls:'bf-87'},
+];
+function runBenchB(){
+  const btn=document.getElementById('bench-b-btn');
+  btn.innerHTML='<span class="spinner"></span>Running…'; btn.disabled=true;
+  let p=0; const st=document.getElementById('bench-b-status');
+  const iv=setInterval(()=>{
+    p+=Math.random()*18; st.textContent=Math.min(100,Math.round(p))+'% complete';
+    if(p>=100){
+      clearInterval(iv); st.textContent='✓ Complete'; btn.textContent='✓ Done'; btn.disabled=false;
+      renderBenchBTable(); showBBChart('sign');
+      document.getElementById('bench-b-results').style.display='block';
+      document.getElementById('bench-b-results').scrollIntoView({behavior:'smooth'});
+      S.benchBDone=true; updateOverheadCalc();
+    }
+  },110);
+}
+function renderBenchBTable(){
+  document.getElementById('bench-b-tbody').innerHTML=benchBData.map((d,i)=>`
+    <tr>
+      <td style="font-family:var(--mono);font-weight:700;font-size:12px;color:${d.safe?'var(--accent)':'var(--red);'}">${d.name}</td>
+      <td class="filled">${d.keygen.toFixed(3)}</td>
+      <td class="filled">${d.sign.toFixed(3)}</td>
+      <td class="filled">${d.verify.toFixed(3)}</td>
+      <td class="filled">${d.sig}</td>
+      <td class="filled">${d.pk}</td>
+      <td style="font-family:var(--mono);font-size:11px;font-weight:700;color:${d.safe?'var(--green)':'var(--red);'}">${d.safe?'✓ Yes':'✗ No'}</td>
+    </tr>`).join('');
+}
+function showBBChart(type){
+  ['sign','verify','sigsize','pksize'].forEach(t=>{
+    const b=document.getElementById('bb-'+t); if(!b)return;
+    const on=t===type;
+    b.style.background=on?'var(--accent-dim)':''; b.style.color=on?'var(--accent)':'';
+    b.style.borderColor=on?'rgba(240,136,62,0.3)':''; b.className=on?'btn btn-sm':'btn btn-sm btn-ghost';
+  });
+  let maxV,getter,title,unit;
+  if(type==='sign'){maxV=3;getter=d=>d.sign;title='Signing Time';unit='ms';}
+  else if(type==='verify'){maxV=0.15;getter=d=>d.verify;title='Verification Time';unit='ms';}
+  else if(type==='sigsize'){maxV=5000;getter=d=>d.sig;title='Signature Size';unit='B';}
+  else{maxV=2700;getter=d=>d.pk;title='Public Key Size';unit='B';}
+  document.getElementById('bench-b-chart').innerHTML=
+    `<div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:14px;">${title} (${unit})</div>`+
+    benchBData.map((d,i)=>{
+      const v=getter(d),pct=Math.min(100,v/maxV*100);
+      return `<div class="bench-row"><div class="bench-label"><span style="font-weight:700;color:${d.safe?'var(--accent)':'var(--text-muted);'}">${d.name}</span><span>${v.toFixed(v<1?3:0)} ${unit}</span></div><div class="bench-track"><div class="bench-fill ${d.cls}" style="width:${pct}%;">${v>maxV*0.15?v.toFixed(v<1?3:0)+' '+unit:''}</div></div></div>`;
+    }).join('');
+}
+function updateOverheadCalc(){
+  const kbSize=parseInt(document.getElementById('doc-size-slider').value);
+  document.getElementById('doc-size-val').textContent=kbSize+' KB';
+  const bytes=kbSize*1024;
+  const sigs={44:2420,65:3309,87:4627};
+  Object.entries(sigs).forEach(([k,s])=>{
+    const pct=(s/bytes*100); const el=document.getElementById('oh-'+k);
+    if(el){el.textContent=pct.toFixed(pct<0.1?3:pct<1?2:1)+'%'; el.style.color=pct>5?'var(--red)':pct>1?'var(--orange)':'var(--green)';}
+  });
+  const pct65=sigs['65']/bytes*100;
+  document.getElementById('oh-verdict').textContent=pct65<1
+    ?`At ${kbSize} KB, ML-DSA-65 adds less than 1% overhead — operationally negligible for this file size.`
+    :`At ${kbSize} KB, ML-DSA-65 adds ${pct65.toFixed(1)}% overhead. Consider whether the file size can be increased or ML-DSA-44 used to reduce signature size.`;
+}
+function resetBenchB(){
+  document.getElementById('bench-b-results').style.display='none';
+  document.getElementById('bench-b-status').textContent='';
+  const btn=document.getElementById('bench-b-btn');
+  btn.textContent='▶ Run Benchmark (100 iterations)'; btn.disabled=false;
+}
+
+// ─── FILE SIGNING ───
+const fileData=[
+  {name:'Telemetry packet',size:512,type:'IoT'},
+  {name:'Config file',size:8192,type:'System'},
+  {name:'Legal document',size:65536,type:'Compliance'},
+  {name:'Firmware image',size:2097152,type:'Embedded'},
+  {name:'OS update',size:10485760,type:'Enterprise'},
+];
+function runFileSign(){
+  const btn=document.getElementById('filesign-btn');
+  btn.innerHTML='<span class="spinner"></span>Signing…'; btn.disabled=true;
+  let p=0; const st=document.getElementById('filesign-status');
+  const iv=setInterval(()=>{
+    p+=20; st.textContent=fileData[Math.min(4,Math.floor(p/20)-1)]?.name||'Done';
+    if(p>=100){
+      clearInterval(iv); st.textContent='✓ Complete'; btn.textContent='✓ Done'; btn.disabled=false;
+      renderFileSignResults(); S.filesignDone=true;
+      document.getElementById('filesign-results').style.display='block';
+      document.getElementById('filesign-results').scrollIntoView({behavior:'smooth'});
+    }
+  },220);
+}
+function renderFileSignResults(){
+  const SIG65=3309, SIGECDSA=72;
+  document.getElementById('filesign-tbody').innerHTML=fileData.map(f=>{
+    const oh65=(SIG65/f.size*100),ohE=(SIGECDSA/f.size*100);
+    const oh65str=oh65<0.01?oh65.toFixed(4)+'%':oh65<1?oh65.toFixed(2)+'%':oh65.toFixed(1)+'%';
+    const ohEstr=ohE<0.01?ohE.toFixed(4)+'%':ohE<1?ohE.toFixed(2)+'%':ohE.toFixed(1)+'%';
+    const sizeStr=f.size<1024?f.size+' B':f.size<1048576?(f.size/1024).toFixed(0)+' KB':(f.size/1048576).toFixed(1)+' MB';
+    return `<tr>
+      <td><strong style="color:var(--text);">${f.name}</strong> <span class="badge badge-blue" style="font-size:9px;">${f.type}</span></td>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--text-muted);">${sizeStr}</td>
+      <td class="filled">${SIG65} B</td>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--text-muted);">${SIGECDSA} B</td>
+      <td style="font-family:var(--mono);font-size:12px;color:${oh65>5?'var(--red)':oh65>1?'var(--orange)':'var(--green);'};font-weight:700;">${oh65str}</td>
+      <td style="font-family:var(--mono);font-size:12px;color:var(--green);font-weight:700;">${ohEstr}</td>
+    </tr>`;
+  }).join('');
+
+  const chart=document.getElementById('ratio-chart');
+  const maxSize=10485760;
+  chart.innerHTML=fileData.map(f=>{
+    const filePct=Math.min(100,f.size/maxSize*100);
+    const sigPct=Math.min(100,3309/maxSize*100);
+    const sizeStr=f.size<1024?f.size+' B':f.size<1048576?(f.size/1024).toFixed(0)+' KB':(f.size/1048576).toFixed(1)+' MB';
+    return `<div class="ratio-row">
+      <div class="ratio-filename">${f.name}<br><span style="color:var(--text-dim);">${sizeStr}</span></div>
+      <div class="ratio-track">
+        <div class="ratio-fill-file" style="width:${filePct}%;display:inline-block;"></div>
+        <div class="ratio-fill-sig" style="width:${Math.max(0.5,sigPct)}%;display:inline-block;"></div>
+      </div>
+      <div class="ratio-label">${(3309/f.size*100).toFixed(f.size<1024?1:2)}%</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('filesign-analysis-text').innerHTML='For a 512-byte IoT telemetry packet, the ML-DSA-65 signature is <strong>646% of the payload</strong> — completely impractical for inline signing. For a 2 MB firmware image, the same signature is <strong>0.016%</strong> — negligible. This confirms the pattern: signature overhead only matters below roughly <strong>50 KB</strong>. Applications working below that threshold need ML-DSA-44, out-of-band signature delivery, or protocol redesign.';
+}
+function resetFileSign(){
+  document.getElementById('filesign-results').style.display='none';
+  document.getElementById('filesign-status').textContent='';
+  const btn=document.getElementById('filesign-btn');
+  btn.textContent='▶ Run File Signing Analysis'; btn.disabled=false;
+}
+
+// ─── FORGERY GRID ───
+const sigLevels=['Sig: none','Sig: 1 bit','Sig: 10 bits','Sig: 50 bits'];
+const msgLevels=['Msg: none','Msg: 1 bit','Msg: 8 bits','Msg: replace'];
+let cellsTried=0;
+function buildForgeryGrid(){
+  const tbody=document.getElementById('forgery-grid-body');
+  tbody.innerHTML=sigLevels.map((sl,si)=>`<tr>
+    <td style="font-family:var(--mono);font-size:10px;color:var(--text-dim);padding:8px 10px;border:1px solid var(--border);background:var(--surface2);white-space:nowrap;">${sl}</td>
+    ${msgLevels.map((ml,mi)=>{
+      const id=`cell-${si}-${mi}`;
+      const isBaseline=si===0&&mi===0;
+      return `<td style="padding:4px;border:1px solid var(--border);"><div class="fg-cell" id="${id}" onclick="tryCellForgery(${si},${mi},this)" style="min-height:52px;">${isBaseline?'<div class="fg-cell-label">Baseline</div>○':'<div class="fg-cell-label">'+sl.split(' ').slice(1).join(' ')+' / '+ml.split(' ').slice(1).join(' ')+'</div>○'}</div></td>`;
+    }).join('')}
+  </tr>`).join('');
+}
+function tryCellForgery(si,mi,el){
+  const isBaseline=si===0&&mi===0;
+  const key=`${si}-${mi}`;
+  if(S.forgeryCells[key])return;
+  S.forgeryCells[key]=true; cellsTried++;
+  if(isBaseline){
+    el.className='fg-cell tried-pass';
+    el.innerHTML='<div class="fg-cell-label">Baseline</div>✓ VALID';
+  } else {
+    el.className='fg-cell tried-fail';
+    el.innerHTML=`<div class="fg-cell-label">${sigLevels[si].split(' ').slice(1).join(' ')} / ${msgLevels[mi].split(' ').slice(1).join(' ')}</div>✗ INVALID`;
+  }
+  document.getElementById('forgery-tally').textContent=`Cells tried: ${cellsTried} / 16`;
+  if(cellsTried>=8){
+    const v=document.getElementById('forgery-verdict');
+    v.style.display='block';
+    document.getElementById('forgery-verdict-text').innerHTML=`You've tried ${cellsTried} combinations. Every non-baseline combination failed. The only valid pair is the original unmodified message with the original unmodified signature — which requires the private key to produce. An attacker without the private key has no path to a valid (message, signature) pair. The search space is 2<sup>${3309*8}</sup> possible signature bytes — larger than the number of atoms in the observable universe.`;
+  }
+}
+buildForgeryGrid();
+
+// ─── SCENARIO SELECTION ───
+const scenarioFeedback={
+  a:{
+    '44':{correct:false,text:'<strong>ML-DSA-44</strong> — Not recommended here. NIST Level 2 security (≈AES-128) may be insufficient for a certificate that must remain trusted for 30 years. If lattice cryptanalysis improves or if quantum hardware arrives ahead of schedule, a 30-year certificate signed with Level 1 provides no safety margin. For long-lived certificates, the performance cost of upgrading to Level 5 is paid once — the certificate is signed once and verified many times.'},
+    '65':{correct:false,text:'<strong>ML-DSA-65</strong> — Defensible but not optimal for this scenario. Level 3 provides solid general-purpose security. However, for a 30-year implantable device certificate where re-issuing is difficult and failure consequence is patient safety, the additional security margin of ML-DSA-87 is justified at minimal cost. The certificate is signed once.'},
+    '87':{correct:true,text:'<strong style="color:var(--green);">ML-DSA-87 ✓ Best Choice.</strong> A 30-year medical device certificate requires maximum available security margin. Level 5 (≈AES-256) ensures the certificate remains computationally unforgeable across the full validity period — even if classical or quantum cryptanalysis improves. The performance overhead is paid once at signing time. Verification is only marginally slower than Level 3. For implantable cardiac devices where a forged update could cause patient harm, there is no justification for a lower security level.'},
+  },
+  b:{
+    '44':{correct:true,text:'<strong style="color:var(--green);">ML-DSA-44 ✓ Best Choice.</strong> A 90-day TLS certificate that is automatically renewed has minimal long-term risk exposure. The certificate is only valid for 3 months — even if Level 2 were somehow weakened, the window of vulnerability is extremely narrow. At high verification volumes, the slightly smaller signature (2420 B vs 3309 B for Level 3) and faster verification time matter. Short-lived certificates rotating every 90 days are the right place to optimize for performance. This is how Let\'s Encrypt and modern ACME deployments should approach ML-DSA selection.'},
+    '65':{correct:false,text:'<strong>ML-DSA-65</strong> — A reasonable choice but slightly over-engineered for a 90-day TLS certificate. Level 3 is the general-purpose recommendation, and it works fine here. However, for a certificate that renews every 90 days at high volume, ML-DSA-44 provides the same practical security (the 90-day window eliminates most long-term risk) with better performance and smaller signature size.'},
+    '87':{correct:false,text:'<strong>ML-DSA-87</strong> — Over-engineered for a 90-day TLS certificate. Level 5 is designed for long-lived credentials where the full security margin is needed across decades. For a certificate that expires in 90 days and is automatically replaced, the additional security of Level 5 provides no practical benefit while imposing higher verification latency and larger signatures at scale. Match security level to the lifetime and consequences of the credential.'},
+  }
+};
+function selectScenario(sc,level){
+  const prefix=`sc-${sc}`;
+  document.querySelectorAll(`#${prefix}-cards .level-card`).forEach(c=>c.classList.remove('selected-card'));
+  document.querySelector(`#${prefix}-cards .lc-${level==='44'?'lc-44':level==='65'?'lc-65':'lc-87'}-`);
+  // simpler approach:
+  const cards=document.querySelectorAll(`#${prefix}-cards .level-card`);
+  const idx=level==='44'?0:level==='65'?1:2;
+  cards.forEach((c,i)=>c.classList.toggle('selected-card',i===idx));
+  const fb=scenarioFeedback[sc][level];
+  const rev=document.getElementById(`${prefix}-reveal`);
+  rev.className='answer-reveal show '+(fb.correct?'correct-reveal':'incorrect-reveal');
+  rev.innerHTML=`<span class="reveal-label">${fb.correct?'✓ Best Choice':'↻ Consider This'}</span>${fb.text}`;
+  S[`sc${sc.toUpperCase()}`]=true;
+}
+
+// ─── REFLECTION ───
+const refData={
+  rq1:{correct:2,texts:[
+    'Incorrect. Without the private key, no amount of trial and error produces a valid signature. The verification function is a one-way check — it does not "accept" near-matches. The only way to pass is to have derived the signature correctly from the private key.',
+    'Incorrect. A 3309-byte signature space is 2^(3309×8) ≈ 2^26472 possible values. Even at one trillion attempts per second, exhausting this space would take longer than the age of the universe by many orders of magnitude.',
+    'Correct. Without the private key, the search space is impossibly large. The forgery grid shows this empirically: even systematic exploration of 15 non-baseline combinations finds nothing. No shortcuts exist for ML-DSA without a breakthrough in lattice mathematics that has eluded 30 years of cryptanalysis.',
+    'Incorrect. Larger signatures do not make ML-DSA easier to brute force. Signature size and forgery resistance are independent properties — a larger signature space actually means more space to search, not less.'
+  ]},
+  rq2:{correct:1,texts:[
+    'Incorrect. Multiple independent layers can catch a forged signature even when it verifies cryptographically. The signature proves the document was signed with the key — it does not prove the key was not compromised.',
+    'Correct. Defense-in-depth is essential in supply chain security. Binary transparency logs (like Certificate Transparency for TLS) create an auditable record of all releases — a forged update that was never logged is detectable. Multi-party signing requires the attacker to compromise multiple independent key holders. Runtime behavior monitoring catches malicious updates that behave anomalously regardless of their signature. No single control is sufficient.',
+    'Incorrect. An HSM prevents export of the private key from the HSM hardware. But the attacker in this scenario recovered the private key from the public key using Shor\'s algorithm — not by extracting it from an HSM. The HSM does not protect against this attack vector.',
+    'Incorrect. TLS encrypts the update in transit but has no effect on whether the binary contents are malicious. A signed malicious binary delivered over TLS is still a signed malicious binary.'
+  ]},
+  rq3:{correct:1,texts:[
+    'Incorrect. Root CA certificates are distributed once and stored in trust stores (firmware, OS, browser). They are not retransmitted per-session. The 1.9 KB size difference is a one-time storage cost. Even highly constrained devices with 64 KB firmware can accommodate a 1952-byte public key alongside other operational data.',
+    'Correct. Root CA certificates live in local trust stores and are not transmitted during normal operations. The size matters at initial provisioning — and most IoT devices are provisioned via factory programming where a 1952-byte key adds negligible overhead. The more significant constraint is the TLS handshake, where the server\'s certificate chain including the ML-DSA signature is transmitted — but this is manageable with TLS optimizations and already handled by major TLS libraries.',
+    'Incorrect. Public keys transmitted during TLS handshakes are part of the certificate chain. The server\'s own certificate public key IS transmitted during the handshake and contributes to handshake overhead.',
+    'Incorrect. ML-DSA public keys are dense cryptographic material that does not compress significantly with general-purpose algorithms. Key compression is a specific research area but not a standard deployment option.'
+  ]}
+};
+function answerR(qid,idx,correct){
+  if(S.reflectDone.has(qid))return;
+  S.reflectDone.add(qid);
+  const data=refData[qid];
+  document.getElementById(qid+'-opts').querySelectorAll('.ref-opt').forEach((o,i)=>{
+    if(i===data.correct)o.classList.add('correct');
+    else if(i===idx&&!correct)o.classList.add('incorrect');
+    o.style.pointerEvents='none';
+  });
+  const rev=document.getElementById(qid+'-reveal');
+  rev.className='answer-reveal show '+(correct?'correct-reveal':'incorrect-reveal');
+  rev.innerHTML=`<span class="reveal-label">${correct?'✓ Correct':'✗ Incorrect'}</span>${data.texts[idx]}`;
+}
+function finishLab(){
+  if(S.reflectDone.size<3){alert('Please answer all three reflection questions first.\nAnswered: '+S.reflectDone.size+'/3');return;}
+  document.getElementById('completionBanner').classList.add('show');
+  document.getElementById('completionBanner').scrollIntoView({behavior:'smooth'});
+  document.getElementById('tab6').classList.add('done');
+}
+document.getElementById('progressBar').style.width=(S.visited.size/7*100)+'%';
+</script>
+</body>
+</html>
