@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lab 4 — Hybrid Cryptography · PQC Series</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+:root {
+  --bg:#080c10;--surface:#0d1117;--surface2:#161b22;--surface3:#1c2330;
+  --border:#21282f;--border2:#30363d;
+  --accent:#3dc9b0;--accent-dim:rgba(61,201,176,0.11);
+  --green:#3fb950;--green-dim:rgba(63,185,80,0.1);
+  --orange:#e3b341;--orange-dim:rgba(227,179,65,0.1);
+  --red:#f85149;--red-dim:rgba(248,81,73,0.1);
+  --purple:#bc8cff;--purple-dim:rgba(188,140,255,0.1);
+  --blue:#58a6ff;--blue-dim:rgba(88,166,255,0.12);
+  --gold:#f0c060;--gold-dim:rgba(240,192,96,0.1);
+  --text:#e6edf3;--text-muted:#8b949e;--text-dim:#484f58;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;--radius:8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.7;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:1000;}
+.progress-track{position:fixed;top:0;left:0;right:0;height:3px;background:var(--border);z-index:200;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--accent));transition:width 0.5s ease;width:0%;}
+.top-nav{position:sticky;top:0;background:rgba(8,12,16,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);z-index:100;padding:0 24px;}
+.nav-inner{max-width:960px;margin:0 auto;display:flex;align-items:center;overflow-x:auto;scrollbar-width:none;}
+.nav-inner::-webkit-scrollbar{display:none;}
+.nav-tab{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-dim);padding:14px 16px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all 0.2s;background:none;border-top:none;border-left:none;border-right:none;display:flex;align-items:center;gap:6px;}
+.nav-tab:hover{color:var(--text-muted);}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.nav-dot{width:6px;height:6px;border-radius:50%;background:var(--text-dim);transition:background 0.2s;}
+.nav-tab.done .nav-dot{background:var(--green);}
+.nav-tab.active .nav-dot{background:var(--accent);}
+.section-wrap{display:none;animation:fadeIn 0.3s ease;}
+.section-wrap.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.container{max-width:960px;margin:0 auto;padding:0 24px 80px;}
+h1{font-size:clamp(20px,2.5vw,28px);font-weight:700;line-height:1.25;}
+h2{font-size:18px;font-weight:700;margin-bottom:14px;}
+h3{font-size:15px;font-weight:600;color:var(--accent);margin:24px 0 8px;}
+p{color:var(--text-muted);margin-bottom:12px;}
+p:last-child{margin-bottom:0;}
+strong{color:var(--text);font-weight:600;}
+.section-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+.section-header{padding:48px 0 36px;border-bottom:1px solid var(--border);margin-bottom:36px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:16px;}
+.callout{border-radius:var(--radius);padding:14px 18px;margin:18px 0;border-left:3px solid;font-size:13.5px;line-height:1.6;}
+.callout-title{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;display:block;margin-bottom:6px;}
+.callout.info{background:var(--accent-dim);border-color:var(--accent);}
+.callout.info .callout-title{color:var(--accent);}
+.callout.blue{background:var(--blue-dim);border-color:var(--blue);}
+.callout.blue .callout-title{color:var(--blue);}
+.callout.warn{background:var(--orange-dim);border-color:var(--orange);}
+.callout.warn .callout-title{color:var(--orange);}
+.callout.danger{background:var(--red-dim);border-color:var(--red);}
+.callout.danger .callout-title{color:var(--red);}
+.callout.success{background:var(--green-dim);border-color:var(--green);}
+.callout.success .callout-title{color:var(--green);}
+.callout.purple{background:var(--purple-dim);border-color:var(--purple);}
+.callout.purple .callout-title{color:var(--purple);}
+.callout.gold{background:var(--gold-dim);border-color:var(--gold);}
+.callout.gold .callout-title{color:var(--gold);}
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:3px 9px;border-radius:20px;border:1px solid;}
+.badge-teal{background:var(--accent-dim);color:var(--accent);border-color:rgba(61,201,176,0.3);}
+.badge-blue{background:var(--blue-dim);color:var(--blue);border-color:rgba(88,166,255,0.3);}
+.badge-green{background:var(--green-dim);color:var(--green);border-color:rgba(63,185,80,0.3);}
+.badge-gold{background:var(--gold-dim);color:var(--gold);border-color:rgba(240,192,96,0.3);}
+.badge-red{background:var(--red-dim);color:var(--red);border-color:rgba(248,81,73,0.3);}
+.badge-purple{background:var(--purple-dim);color:var(--purple);border-color:rgba(188,140,255,0.3);}
+.btn{font-family:var(--sans);font-size:13px;font-weight:600;padding:10px 22px;border-radius:6px;cursor:pointer;transition:all 0.18s;border:1px solid;display:inline-flex;align-items:center;gap:7px;}
+.btn-primary{background:var(--accent);color:#08090c;border-color:var(--accent);}
+.btn-primary:hover{background:#5de8d0;}
+.btn-ghost{background:transparent;color:var(--text-muted);border-color:var(--border2);}
+.btn-ghost:hover{background:var(--surface2);color:var(--text);}
+.btn-green{background:var(--green);color:#08090c;border-color:var(--green);}
+.btn-sm{font-size:12px;padding:7px 16px;}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+/* TERMINAL */
+.terminal{background:#05080b;border:1px solid #1e2d3d;border-radius:10px;overflow:hidden;margin:20px 0;}
+.term-bar{background:#0d1520;border-bottom:1px solid #1e2d3d;padding:10px 16px;display:flex;align-items:center;gap:10px;}
+.term-dots{display:flex;gap:6px;}
+.dot{width:10px;height:10px;border-radius:50%;}
+.dot-r{background:#f85149;}.dot-y{background:#e3b341;}.dot-g{background:#3fb950;}
+.term-title{font-family:var(--mono);font-size:11px;color:var(--text-dim);flex:1;text-align:center;}
+.term-body{padding:22px 28px;font-family:var(--mono);font-size:12.5px;line-height:1.9;color:#adbac7;}
+.p{color:var(--accent);}.cmd{color:var(--text);}.out{color:var(--text-muted);}
+.ok{color:var(--green);}.err{color:var(--red);font-weight:600;}.kwarn{color:var(--orange);}
+.cmt{color:var(--text-dim);font-style:italic;}.blank{height:6px;}
+/* CONCEPT TABS */
+.concept-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:28px;overflow-x:auto;scrollbar-width:none;}
+.concept-tab{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-dim);padding:11px 18px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all 0.2s;background:none;border-top:none;border-left:none;border-right:none;}
+.concept-tab:hover{color:var(--text-muted);}
+.concept-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.concept-panel{display:none;}
+.concept-panel.active{display:block;animation:fadeIn 0.25s ease;}
+/* MC */
+.quiz-block{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin:20px 0;}
+.q-text{font-size:16px;font-weight:600;color:var(--text);line-height:1.5;margin-bottom:20px;}
+.mc-options{display:flex;flex-direction:column;gap:10px;}
+.mc-option{display:flex;align-items:center;gap:14px;padding:13px 16px;border:1px solid var(--border2);border-radius:8px;cursor:pointer;transition:all 0.18s;background:var(--surface2);}
+.mc-option:hover{border-color:var(--accent);background:var(--accent-dim);}
+.mc-option.correct{border-color:var(--green);background:var(--green-dim);pointer-events:none;}
+.mc-option.incorrect{border-color:var(--red);background:var(--red-dim);pointer-events:none;}
+.mc-letter{font-family:var(--mono);font-size:12px;font-weight:700;width:24px;height:24px;border-radius:4px;background:var(--surface);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text-muted);}
+.mc-option.correct .mc-letter{background:var(--green);border-color:var(--green);color:#08090c;}
+.mc-option.incorrect .mc-letter{background:var(--red);border-color:var(--red);color:white;}
+.mc-text{font-size:14px;color:var(--text);}
+.answer-reveal{display:none;margin-top:16px;padding:14px 16px;border-radius:8px;font-size:13.5px;line-height:1.6;border-left:3px solid;animation:fadeIn 0.3s ease;}
+.answer-reveal.show{display:block;}
+.answer-reveal.correct-reveal{background:var(--green-dim);border-color:var(--green);}
+.answer-reveal.incorrect-reveal{background:rgba(248,81,73,0.08);border-color:var(--red);}
+.reveal-label{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;display:block;margin-bottom:6px;}
+.correct-reveal .reveal-label{color:var(--green);}
+.incorrect-reveal .reveal-label{color:var(--red);}
+/* HYBRID FLOW DIAGRAM */
+.hybrid-diagram{margin:24px 0;padding:24px;background:#05080b;border:1px solid #1e2d3d;border-radius:12px;}
+.hd-row{display:flex;align-items:center;gap:0;margin-bottom:12px;}
+.hd-actor{width:90px;text-align:center;flex-shrink:0;}
+.hd-actor-name{font-family:var(--mono);font-size:11px;font-weight:700;padding:8px 10px;border-radius:6px;margin-bottom:6px;display:inline-block;}
+.hd-alice{background:var(--accent-dim);color:var(--accent);border:1px solid rgba(61,201,176,0.3);}
+.hd-bob{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(88,166,255,0.3);}
+.hd-channel{flex:1;position:relative;height:40px;display:flex;align-items:center;justify-content:center;}
+.hd-line{position:absolute;top:50%;left:0;right:0;height:1px;transform:translateY(-50%);}
+.hd-line-x25519{background:linear-gradient(90deg,var(--accent),var(--blue));opacity:0.5;}
+.hd-line-mlkem{background:linear-gradient(90deg,var(--purple),var(--blue));opacity:0.5;}
+.hd-line-active{opacity:1!important;}
+.hd-packet{position:relative;z-index:2;font-family:var(--mono);font-size:10px;font-weight:700;padding:4px 10px;border-radius:4px;white-space:nowrap;}
+.hd-pk-x{background:var(--accent-dim);color:var(--accent);border:1px solid rgba(61,201,176,0.4);}
+.hd-pk-m{background:var(--purple-dim);color:var(--purple);border:1px solid rgba(188,140,255,0.4);}
+.hd-ct{background:var(--blue-dim);color:var(--blue);border:1px solid rgba(88,166,255,0.4);}
+.hd-arrow{font-size:16px;position:absolute;top:50%;transform:translateY(-50%);}
+.hd-arrow-r{right:4px;color:var(--blue);}
+.hd-arrow-l{left:4px;color:var(--accent);}
+/* KEY DISPLAY BOXES */
+.key-boxes{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:16px 0;}
+.key-box{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;}
+.key-box-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;}
+.key-box-val{font-family:var(--mono);font-size:11px;word-break:break-all;line-height:1.5;color:var(--text-dim);min-height:36px;transition:all 0.4s;}
+.key-box-val.has-val{color:var(--accent);}
+.key-box-val.match{color:var(--green);}
+.key-box-val.x25519-val{color:var(--accent);}
+.key-box-val.mlkem-val{color:var(--purple);}
+.key-box-val.hybrid-val{color:var(--gold);}
+/* STEP PIPS */
+.step-pips{display:flex;gap:6px;margin:16px 0;}
+.pip{width:30px;height:5px;border-radius:3px;background:var(--border2);transition:background 0.3s;}
+.pip.pip-done{background:var(--green);}
+.pip.pip-cur{background:var(--accent);}
+/* LOG */
+.exchange-log{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px 18px;font-family:var(--mono);font-size:12px;line-height:1.7;margin:14px 0;min-height:80px;max-height:200px;overflow-y:auto;}
+.ll{color:var(--text-muted);animation:fadeIn 0.3s;}
+.ll-a{color:var(--accent);}
+.ll-b{color:var(--blue);}
+.ll-ok{color:var(--green);font-weight:700;}
+.ll-sys{color:var(--text-dim);}
+.ll-warn{color:var(--orange);}
+/* HANDSHAKE SIZE CHART */
+.hs-chart{margin:20px 0;}
+.hs-row{margin-bottom:14px;}
+.hs-label{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--text-muted);margin-bottom:5px;}
+.hs-track{height:28px;background:var(--surface2);border-radius:5px;overflow:hidden;border:1px solid var(--border);}
+.hs-fill{height:100%;border-radius:5px;display:flex;align-items:center;padding:0 10px;font-family:var(--mono);font-size:11px;font-weight:700;white-space:nowrap;transition:width 1.4s cubic-bezier(0.16,1,0.3,1);width:0%;}
+.hs-classical{background:rgba(227,179,65,0.3);color:var(--orange);}
+.hs-pqonly{background:rgba(188,140,255,0.3);color:var(--purple);}
+.hs-hybrid{background:rgba(61,201,176,0.3);color:var(--accent);}
+/* FLAWED COMBO CARDS */
+.flawed-cards{display:flex;flex-direction:column;gap:16px;margin:20px 0;}
+.flawed-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 24px;}
+.flawed-title{font-family:var(--mono);font-size:12px;font-weight:700;margin-bottom:6px;}
+.flawed-code{background:#05080b;border:1px solid var(--border);border-radius:6px;padding:12px 16px;font-family:var(--mono);font-size:12px;line-height:1.7;margin:10px 0;}
+.security-meter{margin:12px 0;}
+.sm-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:6px;}
+.sm-track{height:20px;background:var(--surface2);border-radius:4px;overflow:hidden;border:1px solid var(--border);}
+.sm-fill{height:100%;border-radius:4px;transition:width 0.8s ease;display:flex;align-items:center;padding:0 8px;font-family:var(--mono);font-size:10px;font-weight:700;}
+.sm-none{background:rgba(248,81,73,0.4);color:var(--red);}
+.sm-weak{background:rgba(227,179,65,0.4);color:var(--orange);}
+.sm-classical{background:rgba(88,166,255,0.4);color:var(--blue);}
+.sm-full{background:rgba(61,201,176,0.4);color:var(--accent);}
+.flawed-result{display:none;margin-top:14px;padding:14px 16px;border-radius:8px;font-size:13px;line-height:1.6;}
+.flawed-result.show{display:block;animation:fadeIn 0.3s;}
+/* COMPONENT FAILURE */
+.cf-scenario{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:20px;margin:16px 0;}
+.cf-keys{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:14px 0;}
+.cf-key{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;}
+.cf-key-label{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;}
+.cf-key-val{font-family:var(--mono);font-size:11px;word-break:break-all;line-height:1.5;}
+.cf-key.revealed{border-color:var(--red);background:var(--red-dim);}
+.cf-key.revealed .cf-key-label{color:var(--red);}
+.cf-key.revealed .cf-key-val{color:var(--red);}
+/* REFLECT */
+.reflect-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:20px;}
+.reflect-q{font-size:15px;font-weight:600;color:var(--text);margin-bottom:14px;line-height:1.5;}
+.ref-opts{display:flex;flex-direction:column;gap:8px;}
+.ref-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1px solid var(--border2);border-radius:8px;cursor:pointer;background:var(--surface2);transition:all 0.18s;font-size:13.5px;line-height:1.5;color:var(--text-muted);}
+.ref-opt:hover{border-color:var(--accent);background:var(--accent-dim);color:var(--text);}
+.ref-opt.correct{border-color:var(--green);background:var(--green-dim);pointer-events:none;color:var(--text);}
+.ref-opt.incorrect{border-color:var(--red);background:var(--red-dim);pointer-events:none;}
+.ref-letter{font-family:var(--mono);font-size:12px;font-weight:700;width:22px;height:22px;border-radius:4px;background:var(--surface);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text-dim);margin-top:1px;}
+.ref-opt.correct .ref-letter{background:var(--green);border-color:var(--green);color:#08090c;}
+.ref-opt.incorrect .ref-letter{background:var(--red);border-color:var(--red);color:white;}
+/* HKDF WRITER */
+.hkdf-input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:12px 16px;font-family:var(--mono);font-size:13px;color:var(--text);resize:vertical;min-height:80px;outline:none;transition:border-color 0.2s;}
+.hkdf-input:focus{border-color:var(--accent);}
+/* COMPLETION */
+.completion-banner{background:linear-gradient(135deg,rgba(61,201,176,0.07),rgba(88,166,255,0.05));border:1px solid rgba(61,201,176,0.25);border-radius:12px;padding:36px;text-align:center;margin:32px 0;display:none;}
+.completion-banner.show{display:block;animation:fadeIn 0.4s ease;}
+.completion-banner h2{font-size:22px;color:var(--accent);margin-bottom:10px;}
+.future-hook{background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:16px 20px;font-style:italic;font-size:15px;color:var(--accent);max-width:600px;margin:16px auto 20px;line-height:1.6;}
+.section-footer{display:flex;justify-content:space-between;align-items:center;margin-top:44px;padding-top:20px;border-top:1px solid var(--border);gap:12px;}
+.divider{border:none;border-top:1px solid var(--border);margin:28px 0;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.cursor{display:inline-block;animation:blink 1s step-end infinite;color:var(--accent);}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes pulse{0%,100%{opacity:0.6}50%{opacity:1}}
+.animating{animation:pulse 0.6s ease infinite;}
+@media(max-width:640px){.key-boxes{grid-template-columns:1fr;}.cf-keys{grid-template-columns:1fr;}.container{padding:0 16px 60px;}}
+</style>
+</head>
+<body>
+
+<div class="progress-track"><div class="progress-fill" id="progressBar"></div></div>
+
+<nav class="top-nav">
+  <div class="nav-inner">
+    <button class="nav-tab active" onclick="goTo(0)" id="tab0"><span class="nav-dot"></span> Mission Brief</button>
+    <button class="nav-tab" onclick="goTo(1)" id="tab1"><span class="nav-dot"></span> Concept</button>
+    <button class="nav-tab" onclick="goTo(2)" id="tab2"><span class="nav-dot"></span> Hybrid Exchange</button>
+    <button class="nav-tab" onclick="goTo(3)" id="tab3"><span class="nav-dot"></span> Handshake Cost</button>
+    <button class="nav-tab" onclick="goTo(4)" id="tab4"><span class="nav-dot"></span> Break It</button>
+    <button class="nav-tab" onclick="goTo(5)" id="tab5"><span class="nav-dot"></span> Reflection</button>
+  </div>
+</nav>
+
+<!-- ══════════════════════ 0 — MISSION BRIEF ══════════════════════ -->
+<div class="section-wrap active" id="sec0">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Lab 4 of 5 · Post-Quantum Cryptography</div>
+    <h1>Hybrid Cryptography: Safe Against Both Worlds</h1>
+    <p style="font-size:15px;max-width:640px;margin-top:10px;">A bank cannot immediately replace millions of RSA certificates embedded in hardware tokens. But it cannot wait for the quantum threat either. In this lab you build a system that is safe against <em>both</em> classical and quantum adversaries simultaneously.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;">
+      <span class="badge badge-teal">⏱ 75 Min</span>
+      <span class="badge badge-blue">🐍 Python + OQS + cryptography</span>
+      <span class="badge badge-gold">⚗️ HKDF Key Combination</span>
+      <span class="badge badge-purple">💥 Component Failure</span>
+    </div>
+  </div>
+
+  <!-- Bank scenario terminal -->
+  <div class="terminal">
+    <div class="term-bar"><div class="term-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div><span class="term-title">BANK-INFRA — migration-status.log</span></div>
+    <div class="term-body">
+      <div class="cmt"># National Bank — PQC Migration Assessment — 2025</div>
+      <div class="blank"></div>
+      <div class="kwarn">[ WARNING ] 4.2M RSA-2048 hardware tokens cannot be replaced before 2028</div>
+      <div class="kwarn">[ WARNING ] Compliance system (ISO 27001) requires RSA-2048 until audit cycle 2027</div>
+      <div class="kwarn">[ WARNING ] 180 embedded ATM controllers: firmware update schedule = 36 months</div>
+      <div class="blank"></div>
+      <div class="err">[ THREAT  ] HNDL harvest detected on customer TLS sessions since 2023</div>
+      <div class="err">[ THREAT  ] Estimated Q-Day exposure window: 2028–2033</div>
+      <div class="blank"></div>
+      <div class="ok">[ SOLUTION] Deploy Hybrid X25519 + ML-KEM-768 immediately</div>
+      <div class="ok">[ SOLUTION] Classical component satisfies compliance; PQ component closes harvest window</div>
+      <div class="ok">[ SOLUTION] Neither component alone is sufficient — both are required simultaneously</div>
+      <div class="blank"></div>
+      <div><span class="p">$ </span><span class="cmd">python lab4_hybrid.py</span><span class="cursor">_</span></div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px;margin:24px 0;">
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:6px;">Classical Component</div>
+      <div style="font-size:18px;font-weight:700;color:var(--orange);">X25519</div>
+      <div style="font-size:12px;color:var(--text-muted);">Fast, small keys. Secure against classical. Broken by Shor's.</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:6px;">Post-Quantum Component</div>
+      <div style="font-size:18px;font-weight:700;color:var(--purple);">ML-KEM-768</div>
+      <div style="font-size:12px;color:var(--text-muted);">Larger keys. Quantum-safe. Newer — less classical scrutiny.</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:6px;">Key Combiner</div>
+      <div style="font-size:18px;font-weight:700;color:var(--gold);">HKDF-SHA256</div>
+      <div style="font-size:12px;color:var(--text-muted);">Combines two secrets into one with cryptographic guarantees.</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:6px;">Security Guarantee</div>
+      <div style="font-size:18px;font-weight:700;color:var(--accent);">Both-or-Zero</div>
+      <div style="font-size:12px;color:var(--text-muted);">Attacker must break <em>both</em> algorithms to compromise the hybrid key.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin-bottom:18px;">Lab Objectives</h2>
+    <div style="display:flex;flex-direction:column;">
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);">
+        <div style="width:28px;height:28px;border-radius:6px;background:var(--accent-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">🧠</div>
+        <div><div style="font-weight:600;font-size:14px;color:var(--text);">Understand Hybrid Security Guarantees</div><div style="font-size:13px;color:var(--text-muted);">Why "both-or-zero" is strictly stronger than either algorithm alone — and why it protects against unknown future vulnerabilities.</div></div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);">
+        <div style="width:28px;height:28px;border-radius:6px;background:var(--blue-dim);color:var(--blue);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">🔑</div>
+        <div><div style="font-weight:600;font-size:14px;color:var(--text);">Implement X25519 + ML-KEM-768</div><div style="font-size:13px;color:var(--text-muted);">Build a complete hybrid key exchange, combine the two shared secrets with HKDF, and confirm both parties derive identical keys.</div></div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);">
+        <div style="width:28px;height:28px;border-radius:6px;background:var(--gold-dim);color:var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">📊</div>
+        <div><div style="font-weight:600;font-size:14px;color:var(--text);">Measure Handshake Overhead</div><div style="font-size:13px;color:var(--text-muted);">Calculate total bytes exchanged in classical-only vs. PQ-only vs. hybrid handshakes. Connect the numbers to TLS deployment constraints.</div></div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;">
+        <div style="width:28px;height:28px;border-radius:6px;background:var(--red-dim);color:var(--red);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">💥</div>
+        <div><div style="font-weight:600;font-size:14px;color:var(--text);">Break It: Flawed Combination Methods</div><div style="font-size:13px;color:var(--text-muted);">Analyze three deliberately broken key combination approaches. Identify the actual security level each achieves. Simulate component failure.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="callout blue" style="margin-top:8px;">
+    <span class="callout-title">🔗 Where This Fits in the Series</span>
+    Labs 2 and 3 showed that ML-KEM and ML-DSA work in isolation. Lab 4 addresses the practical reality: you cannot flip a switch and replace all classical cryptography overnight. Hybrid mode is not a compromise — it is a <strong>strictly stronger</strong> security posture than either algorithm alone during the transition period.
+  </div>
+
+  <div class="section-footer">
+    <span style="font-size:12px;color:var(--text-dim);font-family:var(--mono);">SECTION 1 OF 6</span>
+    <button class="btn btn-primary" onclick="goTo(1)">Begin: The Security Guarantee →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════ 1 — CONCEPT ══════════════════════ -->
+<div class="section-wrap" id="sec1">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Concept · Why Hybrid? · The Both-or-Zero Guarantee</div>
+    <h1>One Algorithm Is Never Enough During a Transition</h1>
+    <p style="font-size:14px;max-width:580px;margin-top:10px;color:var(--text-muted);">The intuition in 5 sentences. Then a comparison table. Then a micro-check.</p>
+  </div>
+
+  <div class="concept-tabs">
+    <button class="concept-tab active" onclick="showCP('cp-why',this)">Why Hybrid?</button>
+    <button class="concept-tab" onclick="showCP('cp-table',this)">Comparison Table</button>
+    <button class="concept-tab" onclick="showCP('cp-hkdf',this)">HKDF: The Combiner</button>
+    <button class="concept-tab" onclick="showCP('cp-real',this)">Real Deployments</button>
+  </div>
+
+  <!-- Why Hybrid -->
+  <div class="concept-panel active" id="cp-why">
+    <div class="callout info">
+      <span class="callout-title">💡 The Core Idea — Both-or-Zero</span>
+      A hybrid key exchange runs two independent key exchange algorithms and combines their outputs. The final session key is secure as long as <strong>at least one</strong> component algorithm remains secure. If quantum computers break ML-KEM tomorrow, the X25519 component still protects you against classical adversaries. If a classical vulnerability is found in X25519, ML-KEM still protects you against quantum adversaries. An attacker must break <em>both simultaneously</em> to compromise the session.
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:20px 0;">
+      <div style="background:var(--surface2);border:1px solid rgba(227,179,65,0.3);border-radius:10px;padding:18px;text-align:center;">
+        <div style="font-size:28px;margin-bottom:8px;">🏛️</div>
+        <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--orange);margin-bottom:8px;">Classical Only</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">X25519 alone. Fast, small. Secure today. A quantum computer with Shor's algorithm breaks it completely. No fallback.</div>
+        <div style="margin-top:10px;font-family:var(--mono);font-size:10px;color:var(--red);">✗ Quantum-vulnerable</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid rgba(188,140,255,0.3);border-radius:10px;padding:18px;text-align:center;">
+        <div style="font-size:28px;margin-bottom:8px;">⚛️</div>
+        <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--purple);margin-bottom:8px;">PQ Only</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">ML-KEM alone. Quantum-safe. But lattice cryptography is young — 30 years less classical scrutiny than Diffie-Hellman. If a classical break is found, no fallback.</div>
+        <div style="margin-top:10px;font-family:var(--mono);font-size:10px;color:var(--orange);">⚠ Unknown classical risk</div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid rgba(61,201,176,0.35);border-radius:10px;padding:18px;text-align:center;">
+        <div style="font-size:28px;margin-bottom:8px;">🔀</div>
+        <div style="font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;">Hybrid</div>
+        <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">X25519 + ML-KEM-768 combined via HKDF. Must break <em>both</em> simultaneously. The stronger component always wins.</div>
+        <div style="margin-top:10px;font-family:var(--mono);font-size:10px;color:var(--green);">✓ Best-of-both security</div>
+      </div>
+    </div>
+
+    <div class="callout warn">
+      <span class="callout-title">⏳ The Migration Reality</span>
+      Google Chrome deployed X25519+ML-KEM-768 as the default TLS key exchange in August 2024. Cloudflare enabled it across their network simultaneously. They did not wait for complete PQ migration — they deployed hybrid, getting quantum protection immediately while maintaining full classical compatibility with every existing server and client. This is the recommended transition path from NIST and IETF.
+    </div>
+  </div>
+
+  <!-- Comparison Table -->
+  <div class="concept-panel" id="cp-table">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px;">
+      <thead>
+        <tr>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Approach</th>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Classical Attack?</th>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Quantum Attack?</th>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Unknown ML-KEM Classical Break?</th>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Overhead</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-weight:700;font-size:12px;color:var(--orange);">X25519 Only</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;font-family:var(--mono);color:var(--green);">✓ Secure</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;font-family:var(--mono);font-weight:700;color:var(--red);">✗ Broken</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;font-family:var(--mono);color:var(--green);">✓ N/A</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--text-muted);">Baseline (0 extra bytes)</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-weight:700;font-size:12px;color:var(--purple);">ML-KEM-768 Only</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;font-family:var(--mono);color:var(--green);">✓ Secure*</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;font-family:var(--mono);font-weight:700;color:var(--green);">✓ Secure</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;font-family:var(--mono);font-weight:700;color:var(--orange);">⚠ Full break</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--text-muted);">+2272 bytes vs. X25519</td>
+        </tr>
+        <tr style="background:rgba(61,201,176,0.03);">
+          <td style="padding:10px 14px;border:1px solid var(--border);background:rgba(61,201,176,0.05);font-family:var(--mono);font-weight:700;font-size:12px;color:var(--accent);">X25519 + ML-KEM-768</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:rgba(61,201,176,0.05);font-size:12px;font-family:var(--mono);font-weight:700;color:var(--green);">✓ Secure</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:rgba(61,201,176,0.05);font-size:12px;font-family:var(--mono);font-weight:700;color:var(--green);">✓ Secure</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:rgba(61,201,176,0.05);font-size:12px;font-family:var(--mono);font-weight:700;color:var(--green);">✓ X25519 fallback</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:rgba(61,201,176,0.05);font-size:12px;color:var(--text-muted);">+2304 bytes total</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:var(--text-dim);">* ML-KEM classical security is well-studied and considered sound, but has fewer years of cryptanalysis than X25519/Curve25519.</p>
+    <div class="callout success">
+      <span class="callout-title">✅ The Dominant Strategy</span>
+      Hybrid is the cryptographic dominant strategy during the transition period: it is never worse than the stronger component and is strictly better whenever one component is compromised. The overhead cost (+2304 bytes in a TLS handshake) is justified by the security gain under any threat model.
+    </div>
+  </div>
+
+  <!-- HKDF -->
+  <div class="concept-panel" id="cp-hkdf">
+    <p>Two shared secrets must be combined into one session key. The combination method is not trivial — doing it wrong can reduce the hybrid to the security of just one component.</p>
+    <div class="terminal">
+      <div class="term-bar"><div class="term-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div><span class="term-title">hkdf_combination.py</span></div>
+      <div class="term-body">
+        <div><span style="color:var(--purple);">from</span> cryptography.hazmat.primitives.kdf.hkdf <span style="color:var(--purple);">import</span> HKDF</div>
+        <div><span style="color:var(--purple);">from</span> cryptography.hazmat.primitives <span style="color:var(--purple);">import</span> hashes</div>
+        <div class="blank"></div>
+        <div class="cmt"># Two independent shared secrets from two algorithms</div>
+        <div>k_x25519 = <span style="color:var(--orange);">bytes</span>(32)  <span class="cmt"># from X25519 key exchange</span></div>
+        <div>k_mlkem  = <span style="color:var(--orange);">bytes</span>(32)  <span class="cmt"># from ML-KEM-768 decapsulation</span></div>
+        <div class="blank"></div>
+        <div class="cmt"># HKDF combines them cryptographically — not just concatenation</div>
+        <div>hkdf = HKDF(</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;algorithm=hashes.SHA256(),</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;length=<span style="color:var(--purple);">32</span>,</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;salt=<span style="color:var(--green);">b"hybrid-pqc-v1"</span>,</div>
+        <div>&nbsp;&nbsp;&nbsp;&nbsp;info=<span style="color:var(--green);">b"X25519+ML-KEM-768 TLS1.3 hybrid"</span>,</div>
+        <div>)</div>
+        <div>hybrid_key = hkdf.derive(k_x25519 + k_mlkem)</div>
+        <div class="blank"></div>
+        <div class="cmt"># Result: 32-byte key whose security = max(k_x25519, k_mlkem)</div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:8px;">
+      <div class="callout danger">
+        <span class="callout-title">✗ Wrong: naive concatenation</span>
+        <code style="font-size:12px;">key = k_x25519 + k_mlkem</code><br><br>
+        This produces a 64-byte key. But the security of the first 32 bytes is completely independent of the last 32 bytes. If an attacker learns k_x25519, they can derive the first half. The "combined" key provides no cryptographic binding between the two components.
+      </div>
+      <div class="callout success">
+        <span class="callout-title">✓ Correct: HKDF</span>
+        <code style="font-size:12px;">key = HKDF(k_x25519 || k_mlkem)</code><br><br>
+        HKDF mixes both inputs together cryptographically. The output is uniformly random and depends on <em>both</em> inputs simultaneously. An attacker who knows k_x25519 still learns nothing about the output without also knowing k_mlkem.
+      </div>
+    </div>
+  </div>
+
+  <!-- Real Deployments -->
+  <div class="concept-panel" id="cp-real">
+    <p style="margin-bottom:16px;">Hybrid key exchange is already deployed at production scale. This is not a theoretical proposal.</p>
+    <div style="display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;">
+        <div style="font-size:22px;flex-shrink:0;">🌐</div>
+        <div><div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:4px;">Google Chrome + Cloudflare — August 2024</div><div style="font-size:13px;color:var(--text-muted);">Chrome shipped X25519MLKEM768 as the default TLS key exchange. Cloudflare enabled support simultaneously. The hybrid key share adds approximately 1200 bytes to the TLS ClientHello — imperceptible on modern connections.</div></div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;">
+        <div style="font-size:22px;flex-shrink:0;">🔐</div>
+        <div><div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:4px;">OpenSSH 9.0+ — 2022</div><div style="font-size:13px;color:var(--text-muted);">OpenSSH added sntrup761x25519-sha512 as a hybrid option, combining a NTRU-based PQC algorithm with X25519. This predates ML-KEM standardization but follows the same hybrid pattern.</div></div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;">
+        <div style="font-size:22px;flex-shrink:0;">📋</div>
+        <div><div style="font-weight:700;font-size:14px;color:var(--text);margin-bottom:4px;">IETF RFC (in progress) — TLS 1.3 Hybrid Key Exchange</div><div style="font-size:13px;color:var(--text-muted);">IETF is standardizing the hybrid key exchange format for TLS 1.3 via the hybrid-kem draft. The pattern you implement in this lab is the reference design used in that specification.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider" />
+  <h2 style="margin-top:0;">Micro-Check — Before You Build</h2>
+
+  <div class="quiz-block" id="mc1-block">
+    <div class="q-text">A cryptographer discovers a classical (non-quantum) attack that breaks ML-KEM-768. In a properly implemented X25519 + ML-KEM-768 hybrid system, what is the security impact?</div>
+    <div class="mc-options" id="mc1-opts">
+      <div class="mc-option" onclick="doMC1('A',false)"><div class="mc-letter">A</div><div class="mc-text">The hybrid key is fully compromised because the HKDF output depends on both components.</div></div>
+      <div class="mc-option" onclick="doMC1('B',true)"><div class="mc-letter">B</div><div class="mc-text">The hybrid key remains secure at X25519 security levels. The attacker can recover k_mlkem, but HKDF ensures the hybrid output is still protected by k_x25519, which remains secure.</div></div>
+      <div class="mc-option" onclick="doMC1('C',false)"><div class="mc-letter">C</div><div class="mc-text">The security degrades to the weaker algorithm, which is now broken — so the effective security is zero.</div></div>
+      <div class="mc-option" onclick="doMC1('D',false)"><div class="mc-letter">D</div><div class="mc-text">Only sessions established after the vulnerability is published are at risk.</div></div>
+    </div>
+    <div class="answer-reveal" id="mc1-reveal"></div>
+  </div>
+
+  <div class="quiz-block" id="mc2-block" style="display:none;">
+    <div class="q-text">Why is HKDF(k_x25519 || k_mlkem) more secure than simply using k_x25519 XOR k_mlkem as the hybrid key?</div>
+    <div class="mc-options" id="mc2-opts">
+      <div class="mc-option" onclick="doMC2('A',false)"><div class="mc-letter">A</div><div class="mc-text">HKDF produces a longer output, making the key harder to brute force.</div></div>
+      <div class="mc-option" onclick="doMC2('B',false)"><div class="mc-letter">B</div><div class="mc-text">XOR is insecure because it is reversible — HKDF is not reversible.</div></div>
+      <div class="mc-option" onclick="doMC2('C',true)"><div class="mc-letter">C</div><div class="mc-text">If one component is known (say k_x25519 is leaked), XOR immediately reveals the other (k_mlkem = hybrid_key XOR k_x25519). HKDF's one-way mixing means knowing one input reveals nothing about the output without the other input.</div></div>
+      <div class="mc-option" onclick="doMC2('D',false)"><div class="mc-letter">D</div><div class="mc-text">XOR produces a key that is biased toward the more random of the two inputs. HKDF corrects this bias.</div></div>
+    </div>
+    <div class="answer-reveal" id="mc2-reveal"></div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="goTo(0)">← Mission Brief</button>
+    <button class="btn btn-primary" id="btn-to-exchange" onclick="goTo(2)" disabled>Build the Hybrid Exchange →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════ 2 — HYBRID EXCHANGE ══════════════════════ -->
+<div class="section-wrap" id="sec2">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Exercise · Hybrid X25519 + ML-KEM-768 Implementation</div>
+    <h1>Build the Full Hybrid Key Exchange</h1>
+    <p style="font-size:14px;max-width:600px;margin-top:10px;color:var(--text-muted);">Run each phase of the hybrid exchange. Both X25519 and ML-KEM-768 run in parallel. HKDF merges the two secrets. Confirm both parties derive the same hybrid key.</p>
+  </div>
+
+  <div class="terminal">
+    <div class="term-bar"><div class="term-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div><span class="term-title">lab4_hybrid.py — Full Implementation</span></div>
+    <div class="term-body">
+      <div><span style="color:var(--purple);">import</span> oqs</div>
+      <div><span style="color:var(--purple);">from</span> cryptography.hazmat.primitives.asymmetric.x25519 <span style="color:var(--purple);">import</span> X25519PrivateKey</div>
+      <div><span style="color:var(--purple);">from</span> cryptography.hazmat.primitives.kdf.hkdf <span style="color:var(--purple);">import</span> HKDF</div>
+      <div><span style="color:var(--purple);">from</span> cryptography.hazmat.primitives <span style="color:var(--purple);">import</span> hashes, serialization</div>
+      <div class="blank"></div>
+      <div class="cmt"># Phase 1 — Alice generates both keypairs</div>
+      <div>alice_x25519_sk = X25519PrivateKey.generate()</div>
+      <div>alice_x25519_pk = alice_x25519_sk.public_key()</div>
+      <div>alice_kem = oqs.KeyEncapsulation(<span style="color:var(--green);">'ML-KEM-768'</span>)</div>
+      <div>alice_kem_pk = alice_kem.generate_keypair()</div>
+      <div class="blank"></div>
+      <div class="cmt"># Phase 2 — Bob performs X25519 + ML-KEM encapsulation</div>
+      <div>bob_x25519_sk = X25519PrivateKey.generate()</div>
+      <div>k_x25519_bob = bob_x25519_sk.exchange(alice_x25519_pk)</div>
+      <div>ct_mlkem, k_mlkem_bob = alice_kem.encap_secret(alice_kem_pk)</div>
+      <div class="blank"></div>
+      <div class="cmt"># Phase 3 — Alice recovers both secrets</div>
+      <div>k_x25519_alice = alice_x25519_sk.exchange(bob_x25519_sk.public_key())</div>
+      <div>k_mlkem_alice = alice_kem.decap_secret(ct_mlkem)</div>
+      <div class="blank"></div>
+      <div class="cmt"># Phase 4 — Both combine via HKDF</div>
+      <div>hybrid_key_alice = HKDF(SHA256, 32, salt, info).derive(k_x25519_alice + k_mlkem_alice)</div>
+      <div>hybrid_key_bob   = HKDF(SHA256, 32, salt, info).derive(k_x25519_bob   + k_mlkem_bob)</div>
+      <div class="ok">assert hybrid_key_alice == hybrid_key_bob  <span class="cmt"># ← this is what you'll verify</span></div>
+    </div>
+  </div>
+
+  <!-- Step pips -->
+  <div class="step-pips" style="margin:20px 0 14px;">
+    <div class="pip pip-cur" id="pip0"></div>
+    <div class="pip" id="pip1"></div>
+    <div class="pip" id="pip2"></div>
+    <div class="pip" id="pip3"></div>
+  </div>
+
+  <!-- Phase buttons -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;">
+    <button class="btn btn-sm btn-primary" id="btn-p1" onclick="runPhase(1)">Phase 1: Alice Generates Keys</button>
+    <button class="btn btn-sm btn-ghost" id="btn-p2" onclick="runPhase(2)" disabled>Phase 2: Bob Responds</button>
+    <button class="btn btn-sm btn-ghost" id="btn-p3" onclick="runPhase(3)" disabled>Phase 3: Alice Recovers Secrets</button>
+    <button class="btn btn-sm btn-ghost" id="btn-p4" onclick="runPhase(4)" disabled>Phase 4: HKDF Combination</button>
+    <button class="btn btn-ghost btn-sm" onclick="resetExchange()">↻ Reset</button>
+  </div>
+
+  <!-- Key boxes — Alice -->
+  <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--accent);margin-bottom:8px;">🧑 Alice's Keys &amp; Secrets</div>
+  <div class="key-boxes" id="alice-boxes">
+    <div class="key-box">
+      <div class="key-box-label" style="color:var(--accent);">X25519 Public Key (32 B)</div>
+      <div class="key-box-val" id="a-x25519-pk">—</div>
+    </div>
+    <div class="key-box">
+      <div class="key-box-label" style="color:var(--purple);">ML-KEM Public Key (1184 B)</div>
+      <div class="key-box-val" id="a-mlkem-pk">—</div>
+    </div>
+    <div class="key-box">
+      <div class="key-box-label" style="color:var(--gold);">Recovered Shared Secrets</div>
+      <div class="key-box-val" id="a-secrets">—</div>
+    </div>
+  </div>
+
+  <!-- Key boxes — Bob -->
+  <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--blue);margin-bottom:8px;margin-top:16px;">👤 Bob's Keys &amp; Secrets</div>
+  <div class="key-boxes" id="bob-boxes">
+    <div class="key-box">
+      <div class="key-box-label" style="color:var(--blue);">X25519 Public Key (32 B)</div>
+      <div class="key-box-val" id="b-x25519-pk">—</div>
+    </div>
+    <div class="key-box">
+      <div class="key-box-label" style="color:var(--purple);">ML-KEM Ciphertext (1088 B)</div>
+      <div class="key-box-val" id="b-mlkem-ct">—</div>
+    </div>
+    <div class="key-box">
+      <div class="key-box-label" style="color:var(--gold);">Generated Shared Secrets</div>
+      <div class="key-box-val" id="b-secrets">—</div>
+    </div>
+  </div>
+
+  <!-- Hybrid key display -->
+  <div style="margin-top:20px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--gold);text-transform:uppercase;margin-bottom:6px;">Alice's Hybrid Key (HKDF output)</div>
+      <div id="a-hybrid" style="font-family:var(--mono);font-size:11px;word-break:break-all;color:var(--text-dim);">—</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--gold);text-transform:uppercase;margin-bottom:6px;">Bob's Hybrid Key (HKDF output)</div>
+      <div id="b-hybrid" style="font-family:var(--mono);font-size:11px;word-break:break-all;color:var(--text-dim);">—</div>
+    </div>
+  </div>
+
+  <!-- Exchange log -->
+  <div class="exchange-log" id="exch-log">
+    <div class="ll ll-sys">[ Ready ] Click Phase 1 to begin the hybrid key exchange.</div>
+  </div>
+
+  <div id="hybrid-success" style="display:none;" class="callout success">
+    <span class="callout-title">✅ Hybrid Key Exchange Complete</span>
+    Both Alice and Bob independently derived the same 32-byte hybrid key. The key's security is the <strong>maximum</strong> of X25519 security and ML-KEM-768 security. An adversary must break both simultaneously to recover this key.
+  </div>
+
+  <!-- Record Table -->
+  <hr class="divider" />
+  <h2>Record Your Measurements</h2>
+  <table style="width:100%;border-collapse:collapse;font-size:13px;margin:16px 0;">
+    <thead>
+      <tr>
+        <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Measurement</th>
+        <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Your Run</th>
+        <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);">Alice X25519 public key size</td><td class="filled" id="rec-ax" style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--accent);">—</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--text-dim);">Alice sends to Bob</td></tr>
+      <tr><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);">Alice ML-KEM public key size</td><td class="filled" id="rec-am" style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--accent);">—</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--text-dim);">Alice sends to Bob</td></tr>
+      <tr><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);">Bob X25519 public key size</td><td class="filled" id="rec-bx" style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--accent);">—</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--text-dim);">Bob sends to Alice</td></tr>
+      <tr><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);">Bob ML-KEM ciphertext size</td><td class="filled" id="rec-bc" style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--accent);">—</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--text-dim);">Bob sends to Alice</td></tr>
+      <tr><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-weight:600;color:var(--text);">Total bytes exchanged (hybrid)</td><td class="filled" id="rec-total" style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);">—</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--text-dim);">Sum of all public material</td></tr>
+      <tr><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);">Keys match?</td><td class="filled" id="rec-match" style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--accent);">—</td><td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--text-dim);">Phase 4 confirms this</td></tr>
+    </tbody>
+  </table>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="goTo(1)">← Concept</button>
+    <button class="btn btn-primary" onclick="goTo(3)">Handshake Cost Analysis →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════ 3 — HANDSHAKE COST ══════════════════════ -->
+<div class="section-wrap" id="sec3">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Handshake Cost Analysis · TLS 1.3 Context</div>
+    <h1>What Does Hybrid Actually Cost?</h1>
+    <p style="font-size:14px;max-width:600px;margin-top:10px;color:var(--text-muted);">Compare bytes exchanged across three handshake approaches. Then connect the numbers to real deployment constraints — broadband vs. IoT.</p>
+  </div>
+
+  <div style="margin:20px 0;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+    <button class="btn btn-primary" id="hs-run-btn" onclick="runHandshakeAnalysis()">▶ Run Handshake Analysis</button>
+    <button class="btn btn-ghost btn-sm" onclick="resetHandshake()">↻ Reset</button>
+    <span id="hs-status" style="font-family:var(--mono);font-size:11px;color:var(--text-dim);"></span>
+  </div>
+
+  <div id="hs-results" style="display:none;">
+    <!-- Summary table -->
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:28px;">
+      <thead>
+        <tr>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Approach</th>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Alice sends</th>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Bob sends</th>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Total</th>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Overhead vs classical</th>
+          <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Quantum safe?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-weight:700;font-size:12px;color:var(--orange);">X25519 Only</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--text-muted);">32 B (pk)</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--text-muted);">32 B (pk)</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--orange);font-weight:700;">64 B</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--text-dim);">Baseline</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:11px;font-weight:700;color:var(--red);">✗ No</td>
+        </tr>
+        <tr>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-weight:700;font-size:12px;color:var(--purple);">ML-KEM-768 Only</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--text-muted);">1184 B (pk)</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--text-muted);">1088 B (ct)</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--purple);font-weight:700;">2272 B</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:12px;color:var(--text-muted);">+2208 B</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:11px;font-weight:700;color:var(--green);">✓ Yes</td>
+        </tr>
+        <tr style="background:rgba(61,201,176,0.03);">
+          <td style="padding:10px 14px;border:1px solid var(--border);background:rgba(61,201,176,0.05);font-family:var(--mono);font-weight:700;font-size:12px;color:var(--accent);">X25519 + ML-KEM-768</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:rgba(61,201,176,0.05);font-family:var(--mono);font-size:12px;color:var(--text-muted);">32 + 1184 B</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:rgba(61,201,176,0.05);font-family:var(--mono);font-size:12px;color:var(--text-muted);">32 + 1088 B</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:rgba(61,201,176,0.05);font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:700;">2336 B</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:rgba(61,201,176,0.05);font-family:var(--mono);font-size:12px;color:var(--text-muted);">+2272 B (+3550%)</td>
+          <td style="padding:10px 14px;border:1px solid var(--border);background:rgba(61,201,176,0.05);font-family:var(--mono);font-size:11px;font-weight:700;color:var(--green);">✓ Yes</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Bar chart -->
+    <h3 style="margin-top:0;">Key Material Size Comparison</h3>
+    <div class="hs-chart">
+      <div class="hs-row"><div class="hs-label"><span style="font-weight:700;color:var(--orange);">X25519 Only</span><span>64 B</span></div><div class="hs-track"><div class="hs-fill hs-classical" id="bar-classical" style="width:0%;"></div></div></div>
+      <div class="hs-row"><div class="hs-label"><span style="font-weight:700;color:var(--purple);">ML-KEM-768 Only</span><span>2,272 B</span></div><div class="hs-track"><div class="hs-fill hs-pqonly" id="bar-pq" style="width:0%;"></div></div></div>
+      <div class="hs-row"><div class="hs-label"><span style="font-weight:700;color:var(--accent);">Hybrid X25519 + ML-KEM-768</span><span>2,336 B</span></div><div class="hs-track"><div class="hs-fill hs-hybrid" id="bar-hybrid" style="width:0%;"></div></div></div>
+    </div>
+
+    <!-- Context calculator -->
+    <div class="card" style="border-color:rgba(61,201,176,0.3);margin-top:20px;">
+      <div style="font-family:var(--mono);font-size:11px;color:var(--accent);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:16px;">📡 Context Calculator — Is 2336 B a Problem?</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;">
+          <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;">📶 100 Mbps Broadband</div>
+          <div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--green);">0.19 ms</div>
+          <div style="font-size:12px;color:var(--text-muted);">Extra latency for hybrid handshake. Imperceptible to users.</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;">
+          <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;">📱 4G LTE (20 Mbps)</div>
+          <div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--green);">0.93 ms</div>
+          <div style="font-size:12px;color:var(--text-muted);">Still imperceptible. Well within normal RTT variation.</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;">
+          <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;">📟 LoRaWAN IoT (250 bps)</div>
+          <div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--red);">74.8 s</div>
+          <div style="font-size:12px;color:var(--text-muted);">Prohibitive. Hybrid ML-KEM-768 cannot be used here without protocol redesign.</div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;">
+          <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;">🏥 Hospital BLE (1 Mbps)</div>
+          <div style="font-family:var(--mono);font-size:20px;font-weight:700;color:var(--orange);">18.7 ms</div>
+          <div style="font-size:12px;color:var(--text-muted);">Marginal. Acceptable for infrequent reconnections. Not for streaming sensors.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout warn" style="margin-top:16px;">
+      <span class="callout-title">📌 The TLS Handshake Reality</span>
+      A full TLS 1.3 handshake with X25519+ML-KEM-768 adds approximately <strong>2272 bytes</strong> to the ClientHello and ServerHello compared to a classical X25519-only handshake. Google's measurements showed this adds less than <strong>1 ms</strong> on typical connections. The hybrid handshake is already the Chrome default. For constrained IoT below ~100 kbps, hybrid ML-KEM-768 requires protocol adaptation — but these devices are also the least likely to be targeted by nation-state quantum adversaries.
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="goTo(2)">← Hybrid Exchange</button>
+    <button class="btn btn-primary" onclick="goTo(4)">Break It Challenge →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════ 4 — BREAK IT ══════════════════════ -->
+<div class="section-wrap" id="sec4">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Break It Challenge · Flawed Combinations + Component Failure</div>
+    <h1>What Happens When the Combination Goes Wrong?</h1>
+    <p style="font-size:14px;max-width:600px;margin-top:10px;color:var(--text-muted);">Three engineers propose different ways to combine the two shared secrets. Evaluate each. Then simulate a component failure and determine whether the hybrid key survives.</p>
+  </div>
+
+  <!-- CHALLENGE 1: Flawed combinations -->
+  <div style="background:linear-gradient(135deg,rgba(248,81,73,0.05),rgba(240,192,96,0.03));border:1px solid rgba(248,81,73,0.22);border-radius:12px;padding:28px;margin-bottom:24px;">
+    <div style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--red);margin-bottom:8px;">💥 Challenge 1 — Evaluate Three Flawed Combination Approaches</div>
+    <p style="font-size:14px;margin-bottom:20px;">Each approach below was proposed by an engineer who understood that two secrets should be combined, but implemented it incorrectly. Analyze each one and select the actual security level achieved. Then click Reveal to see the full explanation.</p>
+
+    <div class="flawed-cards">
+      <!-- Flawed A: XOR with constant -->
+      <div class="flawed-card">
+        <div class="flawed-title">🔨 Approach A — Engineer claims: "XOR with a well-known constant mixes the entropy from both secrets"</div>
+        <div class="flawed-code">
+          <div class="cmt"># Engineer A's implementation</div>
+          <div>CONSTANT = <span style="color:var(--orange);">b'\xde\xad\xbe\xef'</span> * 8   <span class="cmt"># 32 bytes, hardcoded</span></div>
+          <div>hybrid = bytes(a^b for a,b <span style="color:var(--purple);">in</span> zip(k_x25519 + k_mlkem, CONSTANT * 2))</div>
+        </div>
+        <div style="font-size:13px;color:var(--text-muted);margin:10px 0;">Select the actual security level this provides:</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="fa-btns">
+          <button class="btn btn-sm btn-ghost" onclick="evalFlawed('a','zero')">Zero security</button>
+          <button class="btn btn-sm btn-ghost" onclick="evalFlawed('a','x25519')">X25519-level security</button>
+          <button class="btn btn-sm btn-ghost" onclick="evalFlawed('a','mlkem')">ML-KEM-level security</button>
+          <button class="btn btn-sm btn-ghost" onclick="evalFlawed('a','both')">Full hybrid security</button>
+        </div>
+        <div class="flawed-result" id="fa-result"></div>
+      </div>
+
+      <!-- Flawed B: truncate and concat -->
+      <div class="flawed-card">
+        <div class="flawed-title">🔨 Approach B — Engineer claims: "Taking the first 16 bytes of each secret and concatenating gives a 32-byte combined key"</div>
+        <div class="flawed-code">
+          <div class="cmt"># Engineer B's implementation</div>
+          <div>hybrid = k_x25519[:<span style="color:var(--purple);">16</span>] + k_mlkem[:<span style="color:var(--purple);">16</span>]</div>
+          <div class="cmt"># "Both secrets contribute equally — 16 bytes each"</div>
+        </div>
+        <div style="font-size:13px;color:var(--text-muted);margin:10px 0;">Select the actual security level this provides:</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="fb-btns">
+          <button class="btn btn-sm btn-ghost" onclick="evalFlawed('b','zero')">Zero security</button>
+          <button class="btn btn-sm btn-ghost" onclick="evalFlawed('b','x25519')">X25519-level security</button>
+          <button class="btn btn-sm btn-ghost" onclick="evalFlawed('b','mlkem')">ML-KEM-level security</button>
+          <button class="btn btn-sm btn-ghost" onclick="evalFlawed('b','both')">Full hybrid security</button>
+        </div>
+        <div class="flawed-result" id="fb-result"></div>
+      </div>
+
+      <!-- Flawed C: use longer secret -->
+      <div class="flawed-card">
+        <div class="flawed-title">🔨 Approach C — Engineer claims: "Just use the ML-KEM secret — it's from the stronger quantum-safe algorithm, so it provides the best security"</div>
+        <div class="flawed-code">
+          <div class="cmt"># Engineer C's implementation</div>
+          <div>hybrid = k_mlkem   <span class="cmt"># "ML-KEM is stronger, so use it directly"</span></div>
+          <div class="cmt"># k_x25519 is discarded</div>
+        </div>
+        <div style="font-size:13px;color:var(--text-muted);margin:10px 0;">Select the actual security level this provides:</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="fc-btns">
+          <button class="btn btn-sm btn-ghost" onclick="evalFlawed('c','zero')">Zero security</button>
+          <button class="btn btn-sm btn-ghost" onclick="evalFlawed('c','x25519')">X25519-level security</button>
+          <button class="btn btn-sm btn-ghost" onclick="evalFlawed('c','mlkem')">ML-KEM-level security</button>
+          <button class="btn btn-sm btn-ghost" onclick="evalFlawed('c','both')">Full hybrid security</button>
+        </div>
+        <div class="flawed-result" id="fc-result"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHALLENGE 2: Component failure simulation -->
+  <div style="background:linear-gradient(135deg,rgba(188,140,255,0.05),rgba(61,201,176,0.03));border:1px solid rgba(188,140,255,0.25);border-radius:12px;padding:28px;">
+    <div style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--purple);margin-bottom:8px;">🧠 Challenge 2 — Component Failure: Does the Hybrid Key Survive?</div>
+    <p style="font-size:14px;margin-bottom:16px;">A classical adversary compromises the X25519 implementation and learns <strong>k_x25519</strong>. They also observe the ML-KEM ciphertext in transit. In a correctly implemented hybrid using HKDF, can they recover the hybrid key?</p>
+    <p style="font-size:14px;color:var(--text-muted);margin-bottom:20px;">Click "Reveal k_x25519 to Attacker" to simulate this and observe what the attacker can and cannot determine.</p>
+
+    <div class="cf-scenario">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:12px;">Session Components</div>
+      <div class="cf-keys">
+        <div class="cf-key" id="cf-k1">
+          <div class="cf-key-label" style="color:var(--accent);">k_x25519 (X25519 shared secret)</div>
+          <div class="cf-key-val" id="cf-k1-val">3f8a21c4 9b0e57d1 6a8c30f5 e921b47d ... (32 bytes)</div>
+        </div>
+        <div class="cf-key" id="cf-k2">
+          <div class="cf-key-label" style="color:var(--purple);">k_mlkem (ML-KEM-768 shared secret)</div>
+          <div class="cf-key-val" id="cf-k2-val">████████ ████████ ████████ ████████ (hidden)</div>
+        </div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px 16px;font-family:var(--mono);font-size:11px;margin-bottom:16px;">
+        <div style="color:var(--text-dim);margin-bottom:4px;">hybrid_key = HKDF(k_x25519 || k_mlkem)</div>
+        <div id="cf-hybrid-display" style="color:var(--gold);">???????? ???????? ???????? ???????? (unknown to attacker)</div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-sm" style="background:var(--red-dim);color:var(--red);border-color:rgba(248,81,73,0.3);" onclick="revealK1()">⚡ Reveal k_x25519 to Attacker</button>
+        <button class="btn btn-sm btn-ghost" onclick="resetCF()">↻ Reset</button>
+      </div>
+      <div id="cf-result" style="display:none;margin-top:16px;"></div>
+    </div>
+
+    <!-- HKDF one-liner -->
+    <div id="hkdf-oneliner-section" style="margin-top:20px;display:none;">
+      <hr class="divider" style="margin:0 0 20px;" />
+      <div style="font-family:var(--mono);font-size:11px;color:var(--purple);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">✍️ Your Answer — Why Is HKDF Necessary?</div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Write one sentence explaining why HKDF is necessary for hybrid key combination rather than naive concatenation. Consider what HKDF provides that simple <code>k1 + k2</code> does not.</p>
+      <textarea class="hkdf-input" id="hkdf-answer" placeholder="HKDF is necessary because..."></textarea>
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <button class="btn btn-sm btn-primary" onclick="submitHKDF()">Submit</button>
+      </div>
+      <div id="hkdf-feedback" style="display:none;margin-top:12px;" class="callout success">
+        <span class="callout-title">✓ Sample Answer</span>
+        HKDF is necessary because it cryptographically mixes both inputs such that knowing one component reveals nothing about the output — whereas concatenation leaves the two halves independent, meaning an attacker who learns one component immediately halves the effective security of the combined key.
+      </div>
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="goTo(3)">← Handshake Cost</button>
+    <button class="btn btn-primary" onclick="goTo(5)">Continue to Reflection →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════ 5 — REFLECTION ══════════════════════ -->
+<div class="section-wrap" id="sec5">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Reflection · Closing the Loop</div>
+    <h1>Hybrid Design: The Strategic Picture</h1>
+    <p style="font-size:14px;max-width:600px;margin-top:10px;color:var(--text-muted);">Three questions that test whether you understand not just how hybrid works, but why it was designed this way and when to use it.</p>
+  </div>
+
+  <div class="reflect-card">
+    <div class="reflect-q">1. The bank in this lab's scenario has 4.2 million RSA hardware tokens that cannot be replaced until 2028. A colleague argues: "Since RSA tokens will still be in use, there's no point deploying hybrid now — we'll just migrate everything at once in 2028." What's wrong with this reasoning?</div>
+    <div class="ref-opts" id="rq1-opts">
+      <div class="ref-opt" onclick="doR('rq1',0,false)"><div class="ref-letter">A</div><span>The colleague is correct — deploying hybrid piecemeal creates incompatibility issues that make the 2028 migration harder.</span></div>
+      <div class="ref-opt" onclick="doR('rq1',1,true)"><div class="ref-letter">B</div><span>Harvest-Now-Decrypt-Later attacks are happening today. Every TLS session using only RSA or ECDH is being recorded by adversaries who will decrypt it retroactively once a quantum computer arrives. Deploying hybrid immediately stops future sessions from being harvested in decryptable form — even though legacy tokens still exist. The 2028 timeline may be optimistic; the quantum threat window could open before then.</span></div>
+      <div class="ref-opt" onclick="doR('rq1',2,false)"><div class="ref-letter">C</div><span>The colleague's plan is valid but requires filing an exception with NIST to delay PQC deployment beyond the 2030 recommendation.</span></div>
+      <div class="ref-opt" onclick="doR('rq1',3,false)"><div class="ref-letter">D</div><span>Hardware tokens are irrelevant to TLS session security — the two systems are independent.</span></div>
+    </div>
+    <div class="answer-reveal" id="rq1-reveal"></div>
+  </div>
+
+  <div class="reflect-card">
+    <div class="reflect-q">2. After deploying hybrid X25519+ML-KEM-768, a security researcher publishes a paper showing ML-KEM-768 has a theoretical weakness that reduces its effective security from 192 bits to 100 bits — but it is not yet practically broken. What action should the bank take?</div>
+    <div class="ref-opts" id="rq2-opts">
+      <div class="ref-opt" onclick="doR('rq2',0,false)"><div class="ref-letter">A</div><span>Immediately roll back all systems to classical-only X25519 until a patched version of ML-KEM is released.</span></div>
+      <div class="ref-opt" onclick="doR('rq2',1,false)"><div class="ref-letter">B</div><span>Continue with hybrid unchanged — 100-bit security is still well above practical attack levels and the hybrid X25519 component provides full classical protection regardless.</span></div>
+      <div class="ref-opt" onclick="doR('rq2',2,true)"><div class="ref-letter">C</div><span>Monitor the situation and begin planning an upgrade to ML-KEM-1024, but do not roll back — the hybrid system remains more secure than classical-only because X25519 provides full classical protection and the weakened ML-KEM-768 still provides significant quantum resistance. The hybrid design means the bank is not fully exposed even during the upgrade planning period. This is exactly the grace period that hybrid mode was designed to provide.</span></div>
+      <div class="ref-opt" onclick="doR('rq2',3,false)"><div class="ref-letter">D</div><span>Switch entirely to ML-KEM-1024 only and remove X25519 to eliminate the weakened component from the hybrid.</span></div>
+    </div>
+    <div class="answer-reveal" id="rq2-reveal"></div>
+  </div>
+
+  <div class="reflect-card">
+    <div class="reflect-q">3. Why does the salt parameter in HKDF matter for the hybrid key combination? Could the same salt value be reused across multiple sessions?</div>
+    <div class="ref-opts" id="rq3-opts">
+      <div class="ref-opt" onclick="doR('rq3',0,false)"><div class="ref-letter">A</div><span>The salt is cosmetic — it labels the key material for debugging purposes and has no cryptographic significance.</span></div>
+      <div class="ref-opt" onclick="doR('rq3',1,false)"><div class="ref-letter">B</div><span>The salt must be unique per session; reusing it is a critical vulnerability that immediately breaks the hybrid key.</span></div>
+      <div class="ref-opt" onclick="doR('rq3',2,true)"><div class="ref-letter">C</div><span>The salt in HKDF serves as a domain separator and entropy whitener — it ensures the derived key is uniform even if the input key material is biased. For hybrid key exchange, the salt is typically a fixed protocol label (like "X25519+ML-KEM-768 hybrid v1"), not a per-session random value. This is because the per-session randomness already comes from the X25519 and ML-KEM key material. Reusing the salt is fine and by design — it is the input key material (k_x25519 and k_mlkem) that must be unique per session.</span></div>
+      <div class="ref-opt" onclick="doR('rq3',3,false)"><div class="ref-letter">D</div><span>The salt is concatenated with the output, extending the effective key length to 64 bytes.</span></div>
+    </div>
+    <div class="answer-reveal" id="rq3-reveal"></div>
+  </div>
+
+  <!-- Completion -->
+  <div class="completion-banner" id="completionBanner">
+    <div style="font-size:48px;margin-bottom:12px;">🔀</div>
+    <h2>Module 4 Complete</h2>
+    <p style="max-width:560px;">You implemented a complete hybrid X25519+ML-KEM-768 key exchange, analyzed the handshake overhead across deployment contexts, evaluated three broken combination approaches, survived a simulated component compromise, and connected all of it to the bank's real migration challenge.</p>
+    <div class="future-hook">"Lab 5 closes the series by designing a complete migration roadmap: a full PQC deployment plan for a realistic organization, combining ML-KEM, ML-DSA, and hybrid modes into a phased transition with compliance and performance tradeoffs mapped out."</div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:8px;">
+      <span class="badge badge-green">✓ Both-or-Zero Guarantee</span>
+      <span class="badge badge-green">✓ Hybrid Implementation</span>
+      <span class="badge badge-green">✓ Handshake Cost Analysis</span>
+      <span class="badge badge-green">✓ HKDF Necessity</span>
+      <span class="badge badge-green">✓ Component Failure</span>
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="goTo(4)">← Break It</button>
+    <button class="btn btn-green" onclick="finishLab()">Finish Lab 4 →</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ─── STATE ───
+const S={visited:new Set([0]),mc1:false,mc2:false,phase:0,hsShown:false,flawed:{a:false,b:false,c:false},cf:false,hkdf:false,reflect:new Set()};
+
+function goTo(i){
+  document.querySelectorAll('.section-wrap').forEach((s,j)=>s.classList.toggle('active',j===i));
+  document.querySelectorAll('.nav-tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  S.visited.add(i);
+  document.getElementById('progressBar').style.width=(S.visited.size/6*100)+'%';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function showCP(id,btn){
+  document.querySelectorAll('.concept-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.concept-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active'); btn.classList.add('active');
+}
+
+// ─── MC ───
+function doMC1(letter,correct){
+  if(S.mc1)return; S.mc1=true;
+  markMC('mc1-opts','B',letter,correct);
+  const rev=document.getElementById('mc1-reveal');
+  rev.className='answer-reveal show '+(correct?'correct-reveal':'incorrect-reveal');
+  rev.innerHTML=`<span class="reveal-label">${correct?'✓ Correct':'✗ Incorrect — Answer: B'}</span>${correct?'Exactly. ':''}HKDF ensures the hybrid output depends on <em>both</em> inputs. Knowing k_mlkem does not reveal the HKDF output because k_x25519 is unknown to the attacker. The system degrades to X25519 security — not zero security. This fallback is the entire reason for running a hybrid.`;
+  setTimeout(()=>{document.getElementById('mc2-block').style.display='block';document.getElementById('mc2-block').scrollIntoView({behavior:'smooth',block:'start'});},500);
+}
+function doMC2(letter,correct){
+  if(S.mc2)return; S.mc2=true;
+  markMC('mc2-opts','C',letter,correct);
+  const rev=document.getElementById('mc2-reveal');
+  rev.className='answer-reveal show '+(correct?'correct-reveal':'incorrect-reveal');
+  rev.innerHTML=`<span class="reveal-label">${correct?'✓ Correct':'✗ Incorrect — Answer: C'}</span>XOR is commutative and linear. If k_x25519 is known, <code>k_mlkem = hybrid XOR k_x25519</code> immediately. The "hybrid" provides no extra protection over whichever component was leaked. HKDF's one-way function property prevents this — its output is cryptographically separated from its inputs.`;
+  const btn=document.getElementById('btn-to-exchange');
+  btn.disabled=false;
+}
+function markMC(optsId,correctLetter,chosenLetter,correct){
+  document.getElementById(optsId).querySelectorAll('.mc-option').forEach(o=>{
+    const l=o.querySelector('.mc-letter').textContent;
+    if(l===correctLetter)o.classList.add('correct');
+    else if(l===chosenLetter&&!correct)o.classList.add('incorrect');
+    o.style.pointerEvents='none';
+  });
+}
+
+// ─── EXCHANGE ───
+const FD={ax:'a3f8c219e4b506d9',am:'7f3a2b19e8c54d01a6f82e3b7c90d445b1f20938...',bx:'9c4e17f2a30b68d5',bct:'d45e9f2a108b736c0aef2b4917c36d45e9f2a...',ss_x:'8c4f1a7b3e92d605',ss_m:'5a1b9c3f72e04d8a',hybrid:'2e4b8f16a9c3d057'};
+
+function addLog(msg,cls='ll'){const l=document.getElementById('exch-log');const d=document.createElement('div');d.className=cls;d.innerHTML=msg;l.appendChild(d);l.scrollTop=l.scrollHeight;}
+function setVal(id,val,cls='has-val'){const el=document.getElementById(id);if(el){el.textContent=val;el.className='key-box-val '+cls;}}
+function setPip(cur){for(let i=0;i<4;i++){const p=document.getElementById('pip'+i);if(p)p.className='pip '+(i<cur?'pip-done':i===cur?'pip-cur':'');}}
+
+function runPhase(phase){
+  if(phase>S.phase+1)return; S.phase=phase;
+  const btnIds=['btn-p1','btn-p2','btn-p3','btn-p4'];
+  document.getElementById(btnIds[phase-1]).innerHTML='<span class="spinner"></span>Running…';
+  document.getElementById(btnIds[phase-1]).disabled=true;
+
+  setTimeout(()=>{
+    if(phase===1){
+      setVal('a-x25519-pk',FD.ax+'... (32 B)','x25519-val');
+      setVal('a-mlkem-pk',FD.am+' (1184 B)','mlkem-val');
+      document.getElementById('rec-ax').textContent='32 B';
+      document.getElementById('rec-am').textContent='1184 B';
+      addLog('[ Alice ] X25519 keypair generated. pk=32 B','ll ll-a');
+      addLog('[ Alice ] ML-KEM-768 keypair generated. pk=1184 B','ll ll-a');
+      addLog('[ Alice ] Both public keys sent to Bob.','ll ll-a');
+      document.getElementById(btnIds[0]).textContent='✓ Phase 1 Done';
+      document.getElementById(btnIds[1]).disabled=false; document.getElementById(btnIds[1]).className='btn btn-sm btn-primary';
+      setPip(1);
+    } else if(phase===2){
+      setVal('b-x25519-pk',FD.bx+'... (32 B)','x25519-val');
+      setVal('b-mlkem-ct',FD.bct+' (1088 B)','mlkem-val');
+      setVal('b-secrets','k_x25519='+FD.ss_x+'... k_mlkem='+FD.ss_m+'...','hybrid-val');
+      document.getElementById('rec-bx').textContent='32 B';
+      document.getElementById('rec-bc').textContent='1088 B';
+      addLog('[ Bob ] X25519 keypair generated. Exchanged with Alice pk.','ll ll-b');
+      addLog('[ Bob ] ML-KEM-768 encap on Alice pk. ct=1088 B, k_mlkem=32 B','ll ll-b');
+      addLog('[ Bob ] Sent: X25519 pk (32 B) + ML-KEM ct (1088 B) to Alice.','ll ll-b');
+      document.getElementById(btnIds[1]).textContent='✓ Phase 2 Done';
+      document.getElementById(btnIds[2]).disabled=false; document.getElementById(btnIds[2]).className='btn btn-sm btn-primary';
+      setPip(2);
+    } else if(phase===3){
+      setVal('a-secrets','k_x25519='+FD.ss_x+'... k_mlkem='+FD.ss_m+'...','hybrid-val');
+      addLog('[ Alice ] X25519 exchange: k_x25519 derived from Bob pk + Alice sk','ll ll-a');
+      addLog('[ Alice ] ML-KEM decap: k_mlkem recovered from ciphertext + Alice sk','ll ll-a');
+      addLog('[ Alice ] k_x25519 == k_x25519 (Bob): True  |  k_mlkem == k_mlkem (Bob): True','ll ll-ok');
+      document.getElementById(btnIds[2]).textContent='✓ Phase 3 Done';
+      document.getElementById(btnIds[3]).disabled=false; document.getElementById(btnIds[3]).className='btn btn-sm btn-primary';
+      setPip(3);
+    } else if(phase===4){
+      const hybridDisplay=FD.hybrid+'a1c9f3... (32 B)';
+      document.getElementById('a-hybrid').textContent=hybridDisplay;
+      document.getElementById('a-hybrid').style.color='var(--gold)';
+      document.getElementById('b-hybrid').textContent=hybridDisplay;
+      document.getElementById('b-hybrid').style.color='var(--gold)';
+      document.getElementById('rec-total').textContent='2336 B';
+      document.getElementById('rec-match').textContent='True ✓';
+      document.getElementById('rec-match').style.color='var(--green)';
+      addLog('[ Alice ] HKDF(k_x25519 || k_mlkem) → hybrid_key = '+FD.hybrid+'... (32 B)','ll ll-a');
+      addLog('[ Bob ] HKDF(k_x25519 || k_mlkem) → hybrid_key = '+FD.hybrid+'... (32 B)','ll ll-b');
+      addLog('[ System ] hybrid_key_alice == hybrid_key_bob: True ✓','ll ll-ok');
+      addLog('[ System ] Session key security = max(X25519-256, ML-KEM-768-192) = 192-bit PQ security','ll ll-ok');
+      document.getElementById(btnIds[3]).textContent='✓ Phase 4 Done';
+      document.getElementById('hybrid-success').style.display='block';
+      setPip(4);
+    }
+  },900);
+}
+
+function resetExchange(){
+  S.phase=0; setPip(0);
+  ['a-x25519-pk','a-mlkem-pk','a-secrets','b-x25519-pk','b-mlkem-ct','b-secrets'].forEach(id=>{const el=document.getElementById(id);if(el){el.textContent='—';el.className='key-box-val';}});
+  ['a-hybrid','b-hybrid'].forEach(id=>{const el=document.getElementById(id);if(el){el.textContent='—';el.style.color='var(--text-dim)';}});
+  ['rec-ax','rec-am','rec-bx','rec-bc','rec-total','rec-match'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});
+  document.getElementById('exch-log').innerHTML='<div class="ll ll-sys">[ Ready ] Click Phase 1 to begin the hybrid key exchange.</div>';
+  document.getElementById('hybrid-success').style.display='none';
+  const labels=['Phase 1: Alice Generates Keys','Phase 2: Bob Responds','Phase 3: Alice Recovers Secrets','Phase 4: HKDF Combination'];
+  ['btn-p1','btn-p2','btn-p3','btn-p4'].forEach((id,i)=>{const b=document.getElementById(id);if(b){b.disabled=i!==0;b.textContent=labels[i];b.className='btn btn-sm '+(i===0?'btn-primary':'btn-ghost');}});
+}
+
+// ─── HANDSHAKE ───
+function runHandshakeAnalysis(){
+  const btn=document.getElementById('hs-run-btn');
+  btn.innerHTML='<span class="spinner"></span>Analyzing…'; btn.disabled=true;
+  setTimeout(()=>{
+    btn.textContent='✓ Analysis Complete'; btn.disabled=false;
+    document.getElementById('hs-status').textContent='✓ Complete';
+    document.getElementById('hs-results').style.display='block';
+    document.getElementById('hs-results').scrollIntoView({behavior:'smooth'});
+    S.hsShown=true;
+    setTimeout(()=>{
+      document.getElementById('bar-classical').style.width='2.7%';
+      document.getElementById('bar-classical').textContent='64 B';
+      document.getElementById('bar-pq').style.width='97%';
+      document.getElementById('bar-pq').textContent='2272 B';
+      document.getElementById('bar-hybrid').style.width='100%';
+      document.getElementById('bar-hybrid').textContent='2336 B';
+    },200);
+  },1200);
+}
+function resetHandshake(){
+  document.getElementById('hs-results').style.display='none';
+  document.getElementById('hs-status').textContent='';
+  const btn=document.getElementById('hs-run-btn');
+  btn.textContent='▶ Run Handshake Analysis'; btn.disabled=false;
+  ['bar-classical','bar-pq','bar-hybrid'].forEach(id=>{const b=document.getElementById(id);if(b){b.style.width='0%';b.textContent='';}});
+}
+
+// ─── FLAWED COMBOS ───
+const flawedData={
+  a:{correct:'zero',
+     answers:{
+       zero:{right:true,meter:'sm-none',pct:'0%',label:'Zero security',text:'<strong>Correct.</strong> XOR with a known constant is not encryption — it is just a bitwise transformation. The hybrid_key = (k_x25519 + k_mlkem) XOR CONSTANT. Since CONSTANT is hardcoded, an attacker who observes hybrid_key trivially recovers k_x25519 + k_mlkem by XORing with the constant again. This provides <strong>exactly zero additional security</strong> compared to transmitting the secrets in plaintext.'},
+       x25519:{right:false,meter:'sm-none',pct:'0%',label:'Zero security',text:'Incorrect — but closer than it seems. The answer is actually zero security. The CONSTANT is not secret. Anyone who knows CONSTANT can recover both k_x25519 and k_mlkem from the output by a single XOR operation. Even if CONSTANT were secret, it would degrade to constant-only security — not X25519 security.'},
+       mlkem:{right:false,meter:'sm-none',pct:'0%',label:'Zero security',text:'Incorrect. The XOR with a public constant provides no security from either component. See the "Zero security" option for the full explanation.'},
+       both:{right:false,meter:'sm-none',pct:'0%',label:'Zero security',text:'Incorrect. XOR with a known constant is fully reversible without any secret. The combined key provides no security at all.'}
+     }},
+  b:{correct:'x25519',
+     answers:{
+       zero:{right:false,meter:'sm-weak',pct:'40%',label:'Reduced security',text:'Incorrect — though your intuition is right that this is insecure. The answer is X25519-level security, but reduced: only 16 bytes of each secret are used. An attacker who learns k_x25519 gets the first half of the combined key for free. The second half is ML-KEM-derived but only 16 bytes (128 bits) — less than full ML-KEM security.'},
+       x25519:{right:true,meter:'sm-classical',pct:'60%',label:'Reduced classical + PQ security',text:'<strong>Correct (nuanced).</strong> Truncating to 16 bytes halves the effective entropy of each component. The combined key provides at most 128-bit security from each side — meaning classical security is capped at ~128 bits (not 256) and quantum security at ~128 bits (not 192). The halves are also independent — knowing k_x25519[:16] immediately reveals the first half of the combined key, degrading the hybrid to only 128-bit ML-KEM security. HKDF would prevent this separation.'},
+       mlkem:{right:false,meter:'sm-classical',pct:'55%',label:'~128-bit security from each',text:'Partially correct — the two halves each provide ~128-bit security. But the halves are independent: if k_x25519[:16] is known, the attacker has half the key for free. The effective security is min(each half) not max. This is substantially weaker than a proper hybrid.'},
+       both:{right:false,meter:'sm-weak',pct:'25%',label:'Weaker than either alone',text:'Incorrect. Truncation and naive concatenation produces a key that is weaker than either algorithm at full strength. See the correct answer for details.'}
+     }},
+  c:{correct:'mlkem',
+     answers:{
+       zero:{right:false,meter:'sm-classical',pct:'50%',label:'ML-KEM-level security only',text:'Incorrect. Discarding k_x25519 and using k_mlkem directly actually provides full ML-KEM-768 security — but zero hybrid benefit. The correct answer is ML-KEM-level security.'},
+       x25519:{right:false,meter:'sm-none',pct:'0%',label:'Zero X25519 component',text:'Incorrect. k_x25519 is discarded entirely. X25519 contributes nothing. The security is ML-KEM-level only.'},
+       mlkem:{right:true,meter:'sm-classical',pct:'75%',label:'ML-KEM-768 security only',text:'<strong>Correct.</strong> Using k_mlkem directly provides full ML-KEM-768 security — but this is not a hybrid at all. If ML-KEM is ever classically broken, there is no X25519 fallback. If a quantum computer breaks X25519 (which this ignores), k_mlkem is never used and is irrelevant. The engineer confused "use the stronger component" with "combine both" — these are fundamentally different security properties.'},
+       both:{right:false,meter:'sm-classical',pct:'50%',label:'ML-KEM only — no hybrid benefit',text:'Incorrect. Discarding k_x25519 eliminates the hybrid benefit entirely. This is PQ-only, not hybrid.'}
+     }}
+};
+function evalFlawed(which,answer){
+  if(S.flawed[which])return; S.flawed[which]=true;
+  const data=flawedData[which].answers[answer];
+  const result=document.getElementById('f'+which+'-result');
+  result.className='flawed-result show '+(data.right?'':'');
+  result.style.background=data.right?'var(--green-dim)':'rgba(248,81,73,0.07)';
+  result.style.border='1px solid '+(data.right?'var(--green)':'var(--red)');
+  result.style.borderRadius='8px';
+  result.style.padding='14px 16px';
+  result.innerHTML=`<div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:${data.right?'var(--green)':'var(--red)'};margin-bottom:10px;">${data.right?'✓ Correct':'✗ Incorrect'} — Actual security: ${data.label}</div>
+    <div class="security-meter"><div class="sm-label">Effective Security Level</div><div class="sm-track"><div class="sm-fill ${data.meter}" style="width:${data.pct};">${data.label}</div></div></div>
+    <div style="font-size:13px;color:var(--text-muted);line-height:1.6;margin-top:10px;">${data.text}</div>`;
+  // Lock buttons
+  document.getElementById('f'+which+'-btns').querySelectorAll('button').forEach(b=>b.disabled=true);
+}
+
+// ─── COMPONENT FAILURE ───
+let cfRevealed=false;
+function revealK1(){
+  if(cfRevealed)return; cfRevealed=true;
+  const k1=document.getElementById('cf-k1');
+  k1.classList.add('revealed');
+  k1.querySelector('.cf-key-label').textContent='k_x25519 — LEAKED TO ATTACKER';
+  k1.querySelector('.cf-key-val').textContent='3f8a21c4 9b0e57d1 6a8c30f5 e921b47d ... ← attacker has this';
+  const result=document.getElementById('cf-result');
+  result.style.display='block';
+  result.className='callout success';
+  result.innerHTML=`<span class="callout-title">✓ Hybrid Key Survives — Here's Why</span>
+    The attacker now knows <strong>k_x25519</strong>. But the hybrid key was derived as <code>HKDF(k_x25519 || k_mlkem)</code>. HKDF is a one-way function: knowing one input does not reveal the output without the other input. The attacker still needs <strong>k_mlkem</strong> — which requires breaking ML-KEM-768's encapsulation using the quantum-hard LWE problem.
+    <br><br>
+    <strong>The math:</strong> To recover the hybrid key, the attacker must solve:<br>
+    <code>hybrid_key = HKDF(k_x25519_known || k_mlkem_unknown)</code><br><br>
+    Since k_x25519 is known, this reduces to finding k_mlkem such that HKDF produces the observed hybrid key. But HKDF is a pseudorandom function — no such inversion is possible. The attacker is back to breaking ML-KEM-768 directly, which requires solving Module-LWE.
+    <br><br>
+    <strong>Security level after compromise:</strong> The hybrid key is now protected by ML-KEM-768 security alone (192 bits quantum). This is the exact "fallback" that hybrid mode was designed to provide.`;
+  S.cf=true;
+  document.getElementById('hkdf-oneliner-section').style.display='block';
+}
+function resetCF(){
+  cfRevealed=false;
+  const k1=document.getElementById('cf-k1');
+  k1.classList.remove('revealed');
+  k1.querySelector('.cf-key-label').style.color='var(--accent)';
+  k1.querySelector('.cf-key-label').textContent='k_x25519 (X25519 shared secret)';
+  k1.querySelector('.cf-key-val').textContent='3f8a21c4 9b0e57d1 6a8c30f5 e921b47d ... (32 bytes)';
+  document.getElementById('cf-result').style.display='none';
+  document.getElementById('hkdf-oneliner-section').style.display='none';
+  document.getElementById('hkdf-feedback').style.display='none';
+  document.getElementById('hkdf-answer').value='';
+}
+function submitHKDF(){
+  const val=document.getElementById('hkdf-answer').value.trim();
+  if(val.length<20){alert('Please write a complete sentence (at least a few words).');return;}
+  document.getElementById('hkdf-feedback').style.display='block';
+  document.getElementById('hkdf-feedback').scrollIntoView({behavior:'smooth',block:'nearest'});
+  S.hkdf=true;
+}
+
+// ─── REFLECT ───
+const rData={
+  rq1:{correct:1,texts:['Incorrect. HNDL attacks mean every classical-only session is being archived for future quantum decryption. Waiting until 2028 means all sessions between now and then are vulnerable once Q-Day arrives — regardless of when the hardware tokens are replaced.','Correct. The colleague conflates "not all legacy systems are migrated" with "there\'s no point deploying hybrid now." These are independent. New TLS sessions can use hybrid X25519+ML-KEM-768 starting today, protecting all future sessions from harvest attacks. Legacy hardware tokens are a separate concern addressed by gradual replacement.','Incorrect. NIST recommendations govern algorithm selection but do not include specific deployment timelines by name for this scenario. The HNDL threat is a technical risk that does not wait for compliance cycles.','Incorrect. TLS session keys are independent of hardware token operations in many but not all contexts. For sessions where hardware token keys ARE used in key derivation, they are relevant. But new server-side TLS sessions can be protected by hybrid mode regardless.']},
+  rq2:{correct:2,texts:['Incorrect. Rolling back to classical-only X25519 eliminates quantum protection entirely. The bank would return to full vulnerability against harvest attacks. A weakened ML-KEM is still far better than no quantum protection.','Incorrect — though this sounds reasonable. A 100-bit reduction is significant and should trigger an upgrade planning process. Saying "continue unchanged" is too passive a response. The correct answer involves both maintaining the current hybrid (which still provides meaningful protection) and actively planning an upgrade.','Correct. The hybrid design provides exactly this kind of resilience — a weakened component does not require immediate rollback because the other component maintains classical security. 100-bit quantum security is below ideal but still computationally intractable with current hardware. Planning an upgrade to ML-KEM-1024 is appropriate; emergency rollback is not.','Incorrect. Removing X25519 to eliminate the "weakened" component is backwards — X25519 is not weakened in this scenario. ML-KEM-768 is the component with reduced security. Switching to ML-KEM-1024 only (without X25519) returns to PQ-only mode with no classical fallback.']},
+  rq3:{correct:2,texts:['Incorrect. The salt is cryptographically significant in HKDF — it conditions the randomness extraction step and ensures the derived key is uniformly distributed even if the input key material has bias or structure.','Incorrect. The salt in a TLS hybrid context is typically a fixed protocol label, not a per-session random value. It is the key material inputs (k_x25519, k_mlkem) that provide per-session uniqueness. Requiring a unique salt would be an unnecessary additional constraint.','Correct. HKDF\'s salt is a domain separator and randomness conditioner — not a per-session nonce. Using a fixed, descriptive label like "X25519+ML-KEM-768 TLS1.3 hybrid" is correct and is exactly how IETF specifies it in the hybrid TLS drafts. The per-session randomness is provided by the key material itself, not the salt.','Incorrect. The HKDF output length is determined by the "length" parameter, not the salt. The salt does not contribute to the output length.']},
+};
+function doR(qid,idx,correct){
+  if(S.reflect.has(qid))return; S.reflect.add(qid);
+  const data=rData[qid];
+  document.getElementById(qid+'-opts').querySelectorAll('.ref-opt').forEach((o,i)=>{
+    if(i===data.correct)o.classList.add('correct');
+    else if(i===idx&&!correct)o.classList.add('incorrect');
+    o.style.pointerEvents='none';
+  });
+  const rev=document.getElementById(qid+'-reveal');
+  rev.className='answer-reveal show '+(correct?'correct-reveal':'incorrect-reveal');
+  rev.innerHTML=`<span class="reveal-label">${correct?'✓ Correct':'✗ Incorrect'}</span>${data.texts[idx]}`;
+}
+function finishLab(){
+  if(S.reflect.size<3){alert('Please answer all three reflection questions first.\nAnswered: '+S.reflect.size+'/3');return;}
+  document.getElementById('completionBanner').classList.add('show');
+  document.getElementById('completionBanner').scrollIntoView({behavior:'smooth'});
+  document.getElementById('tab5').classList.add('done');
+  document.getElementById('progressBar').style.width='100%';
+}
+document.getElementById('progressBar').style.width=(S.visited.size/6*100)+'%';
+</script>
+</body>
+</html>
