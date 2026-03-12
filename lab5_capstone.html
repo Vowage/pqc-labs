@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Lab 5 — Capstone: Migration Planning · PQC Series</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#080c10;--surface:#0d1117;--surface2:#161b22;--surface3:#1c2330;
+  --border:#21282f;--border2:#30363d;
+  --accent:#f778ba;--accent-dim:rgba(247,120,186,0.10);
+  --green:#3fb950;--green-dim:rgba(63,185,80,0.10);
+  --orange:#e3b341;--orange-dim:rgba(227,179,65,0.10);
+  --red:#f85149;--red-dim:rgba(248,81,73,0.10);
+  --purple:#bc8cff;--purple-dim:rgba(188,140,255,0.10);
+  --blue:#58a6ff;--blue-dim:rgba(88,166,255,0.12);
+  --teal:#39d0d8;--teal-dim:rgba(57,208,216,0.10);
+  --text:#e6edf3;--text-muted:#8b949e;--text-dim:#484f58;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;--radius:8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.7;min-height:100vh;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:1000;}
+.progress-track{position:fixed;top:0;left:0;right:0;height:3px;background:var(--border);z-index:200;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--purple));transition:width 0.5s ease;width:0%;}
+.top-nav{position:sticky;top:0;background:rgba(8,12,16,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);z-index:100;padding:0 24px;}
+.nav-inner{max-width:1000px;margin:0 auto;display:flex;align-items:center;overflow-x:auto;scrollbar-width:none;}
+.nav-inner::-webkit-scrollbar{display:none;}
+.nav-tab{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-dim);padding:14px 14px;border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all 0.2s;background:none;border-top:none;border-left:none;border-right:none;display:flex;align-items:center;gap:6px;}
+.nav-tab:hover{color:var(--text-muted);}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.nav-dot{width:6px;height:6px;border-radius:50%;background:var(--text-dim);transition:background 0.2s;}
+.nav-tab.done .nav-dot{background:var(--green);}
+.nav-tab.active .nav-dot{background:var(--accent);}
+.section-wrap{display:none;animation:fadeIn 0.3s ease;}
+.section-wrap.active{display:block;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.container{max-width:1000px;margin:0 auto;padding:0 24px 80px;}
+h1{font-size:clamp(20px,2.5vw,28px);font-weight:700;line-height:1.25;}
+h2{font-size:18px;font-weight:700;margin-bottom:14px;}
+h3{font-size:15px;font-weight:600;color:var(--accent);margin:24px 0 8px;}
+p{color:var(--text-muted);margin-bottom:12px;}
+p:last-child{margin-bottom:0;}
+strong{color:var(--text);font-weight:600;}
+.section-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+.section-header{padding:48px 0 36px;border-bottom:1px solid var(--border);margin-bottom:36px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 24px;margin-bottom:16px;}
+.callout{border-radius:var(--radius);padding:14px 18px;margin:18px 0;border-left:3px solid;font-size:13.5px;line-height:1.6;}
+.callout-title{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;display:block;margin-bottom:6px;}
+.callout.info{background:var(--accent-dim);border-color:var(--accent);}
+.callout.info .callout-title{color:var(--accent);}
+.callout.blue{background:var(--blue-dim);border-color:var(--blue);}
+.callout.blue .callout-title{color:var(--blue);}
+.callout.warn{background:var(--orange-dim);border-color:var(--orange);}
+.callout.warn .callout-title{color:var(--orange);}
+.callout.danger{background:var(--red-dim);border-color:var(--red);}
+.callout.danger .callout-title{color:var(--red);}
+.callout.success{background:var(--green-dim);border-color:var(--green);}
+.callout.success .callout-title{color:var(--green);}
+.callout.purple{background:var(--purple-dim);border-color:var(--purple);}
+.callout.purple .callout-title{color:var(--purple);}
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;padding:3px 9px;border-radius:20px;border:1px solid;}
+.badge-pink{background:var(--accent-dim);color:var(--accent);border-color:rgba(247,120,186,0.3);}
+.badge-green{background:var(--green-dim);color:var(--green);border-color:rgba(63,185,80,0.3);}
+.badge-blue{background:var(--blue-dim);color:var(--blue);border-color:rgba(88,166,255,0.3);}
+.badge-red{background:var(--red-dim);color:var(--red);border-color:rgba(248,81,73,0.3);}
+.badge-orange{background:var(--orange-dim);color:var(--orange);border-color:rgba(227,179,65,0.3);}
+.badge-purple{background:var(--purple-dim);color:var(--purple);border-color:rgba(188,140,255,0.3);}
+.btn{font-family:var(--sans);font-size:13px;font-weight:600;padding:10px 22px;border-radius:6px;cursor:pointer;transition:all 0.18s;border:1px solid;display:inline-flex;align-items:center;gap:7px;}
+.btn-primary{background:var(--accent);color:#08090c;border-color:var(--accent);}
+.btn-primary:hover{background:#ffa0d0;}
+.btn-ghost{background:transparent;color:var(--text-muted);border-color:var(--border2);}
+.btn-ghost:hover{background:var(--surface2);color:var(--text);}
+.btn-green{background:var(--green);color:#08090c;border-color:var(--green);}
+.btn-red{background:var(--red);color:white;border-color:var(--red);}
+.btn-sm{font-size:12px;padding:7px 16px;}
+.btn:disabled{opacity:0.45;cursor:not-allowed;}
+/* TERMINAL */
+.terminal{background:#05080b;border:1px solid #1e2d3d;border-radius:10px;overflow:hidden;margin:20px 0;}
+.term-bar{background:#0d1520;border-bottom:1px solid #1e2d3d;padding:10px 16px;display:flex;align-items:center;gap:10px;}
+.term-dots{display:flex;gap:6px;}
+.dot{width:10px;height:10px;border-radius:50%;}
+.dot-r{background:#f85149;}.dot-y{background:#e3b341;}.dot-g{background:#3fb950;}
+.term-title{font-family:var(--mono);font-size:11px;color:var(--text-dim);flex:1;text-align:center;}
+.term-body{padding:22px 28px;font-family:var(--mono);font-size:12.5px;line-height:1.9;color:#adbac7;}
+.ok{color:var(--green);}.err{color:var(--red);font-weight:600;}.warn{color:var(--orange);}.cmt{color:var(--text-dim);font-style:italic;}.blank{height:6px;}
+/* PRIORITY SELECTOR */
+.asset-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 22px;margin-bottom:14px;transition:border-color 0.2s;}
+.asset-card.priority-critical{border-color:rgba(248,81,73,0.5);background:rgba(248,81,73,0.03);}
+.asset-card.priority-high{border-color:rgba(227,179,65,0.5);background:rgba(227,179,65,0.03);}
+.asset-card.priority-medium{border-color:rgba(88,166,255,0.5);background:rgba(88,166,255,0.03);}
+.asset-card.priority-low{border-color:rgba(63,185,80,0.5);background:rgba(63,185,80,0.03);}
+.asset-header{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:12px;}
+.asset-name{font-size:15px;font-weight:700;color:var(--text);}
+.asset-meta{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0;}
+.asset-body{font-size:13px;color:var(--text-muted);margin-bottom:14px;line-height:1.7;}
+.priority-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.pb{font-family:var(--mono);font-size:11px;font-weight:700;padding:5px 12px;border-radius:4px;cursor:pointer;border:1px solid;transition:all 0.15s;background:transparent;}
+.pb-critical{color:var(--red);border-color:rgba(248,81,73,0.4);}
+.pb-critical:hover,.pb-critical.selected{background:var(--red);color:white;border-color:var(--red);}
+.pb-high{color:var(--orange);border-color:rgba(227,179,65,0.4);}
+.pb-high:hover,.pb-high.selected{background:var(--orange);color:#08090c;border-color:var(--orange);}
+.pb-medium{color:var(--blue);border-color:rgba(88,166,255,0.4);}
+.pb-medium:hover,.pb-medium.selected{background:var(--blue);color:#08090c;border-color:var(--blue);}
+.pb-low{color:var(--green);border-color:rgba(63,185,80,0.4);}
+.pb-low:hover,.pb-low.selected{background:var(--green);color:#08090c;border-color:var(--green);}
+.asset-justify{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:10px 14px;font-family:var(--sans);font-size:13px;color:var(--text);resize:none;outline:none;min-height:64px;margin-top:10px;transition:border-color 0.2s;}
+.asset-justify:focus{border-color:var(--accent);}
+/* ROADMAP BUILDER */
+.phase-block{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px;margin-bottom:16px;}
+.phase-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.phase-badge{font-family:var(--mono);font-size:11px;font-weight:700;padding:4px 12px;border-radius:4px;text-transform:uppercase;letter-spacing:0.06em;}
+.phase-1{background:rgba(248,81,73,0.15);color:var(--red);}
+.phase-2{background:rgba(227,179,65,0.15);color:var(--orange);}
+.phase-3{background:rgba(88,166,255,0.15);color:var(--blue);}
+.phase-4{background:rgba(63,185,80,0.15);color:var(--green);}
+.phase-drop{min-height:80px;border:2px dashed var(--border2);border-radius:8px;padding:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;content:'';transition:border-color 0.2s;}
+.phase-drop.drag-over{border-color:var(--accent);}
+.phase-chip{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:4px;background:var(--surface2);border:1px solid var(--border2);cursor:grab;user-select:none;display:flex;align-items:center;gap:5px;color:var(--text-muted);transition:all 0.15s;}
+.phase-chip:hover{border-color:var(--accent);color:var(--accent);}
+.phase-chip.dragging{opacity:0.4;}
+.phase-approach{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:9px 12px;font-family:var(--sans);font-size:12px;color:var(--text);resize:none;outline:none;min-height:52px;margin-top:12px;transition:border-color 0.2s;}
+.phase-approach:focus{border-color:var(--accent);}
+.unassigned-pool{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:20px;}
+/* LEGACY TABLE */
+.legacy-table{width:100%;border-collapse:collapse;margin:16px 0;}
+.legacy-table th{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;}
+.legacy-table td{padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:13px;color:var(--text-muted);vertical-align:top;}
+.legacy-table td textarea{width:100%;background:transparent;border:none;color:var(--text-muted);font-family:var(--sans);font-size:12px;resize:none;outline:none;min-height:52px;line-height:1.6;}
+.legacy-table td textarea:focus{color:var(--text);}
+.legacy-radio{display:flex;gap:8px;margin-bottom:6px;flex-wrap:wrap;}
+.lr{display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;}
+.lr input[type=radio]{accent-color:var(--accent);}
+/* EMAIL EDITOR */
+.email-editor{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;overflow:hidden;margin:16px 0;}
+.email-fields{border-bottom:1px solid var(--border);padding:14px 18px;display:flex;flex-direction:column;gap:8px;}
+.email-field{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px;color:var(--text-dim);}
+.email-field input{flex:1;background:transparent;border:none;color:var(--text);font-family:var(--sans);font-size:13px;outline:none;}
+.email-body-area{padding:18px;min-height:160px;}
+.email-body-area textarea{width:100%;background:transparent;border:none;color:var(--text-muted);font-family:var(--sans);font-size:13px;resize:none;outline:none;min-height:160px;line-height:1.8;}
+.email-body-area textarea:focus{color:var(--text);}
+/* BUDGET PICKER */
+.budget-asset{display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid var(--border2);border-radius:8px;margin-bottom:8px;cursor:pointer;transition:all 0.18s;background:var(--surface2);}
+.budget-asset:hover{border-color:var(--accent);}
+.budget-asset.budget-selected{border-color:var(--accent);background:var(--accent-dim);}
+.budget-asset.budget-disabled{opacity:0.4;cursor:not-allowed;}
+.ba-check{width:20px;height:20px;border:2px solid var(--border2);border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;}
+.budget-asset.budget-selected .ba-check{background:var(--accent);border-color:var(--accent);color:#08090c;}
+.ba-name{font-weight:600;font-size:14px;color:var(--text);flex:1;}
+.ba-meta{font-size:12px;color:var(--text-muted);}
+.ba-justify{display:none;width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:8px 12px;font-family:var(--sans);font-size:12px;color:var(--text);resize:none;outline:none;min-height:52px;margin-top:8px;}
+.ba-justify.show{display:block;}
+/* DELIVERABLE */
+.deliverable-section{margin-bottom:24px;}
+.deliverable-label{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent);margin-bottom:8px;}
+.deliverable-textarea{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:14px 16px;font-family:var(--sans);font-size:14px;color:var(--text);resize:vertical;outline:none;line-height:1.8;transition:border-color 0.2s;}
+.deliverable-textarea:focus{border-color:var(--accent);}
+.word-counter{font-family:var(--mono);font-size:11px;color:var(--text-dim);text-align:right;margin-top:4px;}
+/* REFLECT */
+.reflect-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:20px;}
+.reflect-q{font-size:15px;font-weight:600;color:var(--text);margin-bottom:14px;line-height:1.5;}
+.ref-opts{display:flex;flex-direction:column;gap:8px;}
+.ref-opt{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border:1px solid var(--border2);border-radius:8px;cursor:pointer;background:var(--surface2);transition:all 0.18s;font-size:13.5px;line-height:1.5;color:var(--text-muted);}
+.ref-opt:hover{border-color:var(--accent);background:var(--accent-dim);color:var(--text);}
+.ref-opt.correct{border-color:var(--green);background:var(--green-dim);pointer-events:none;color:var(--text);}
+.ref-opt.incorrect{border-color:var(--red);background:var(--red-dim);pointer-events:none;}
+.ref-letter{font-family:var(--mono);font-size:12px;font-weight:700;width:22px;height:22px;border-radius:4px;background:var(--surface);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text-dim);margin-top:1px;}
+.ref-opt.correct .ref-letter{background:var(--green);border-color:var(--green);color:#08090c;}
+.ref-opt.incorrect .ref-letter{background:var(--red);border-color:var(--red);color:white;}
+.answer-reveal{display:none;margin-top:16px;padding:14px 16px;border-radius:8px;font-size:13.5px;line-height:1.6;border-left:3px solid;animation:fadeIn 0.3s ease;}
+.answer-reveal.show{display:block;}
+.answer-reveal.correct-reveal{background:var(--green-dim);border-color:var(--green);}
+.answer-reveal.incorrect-reveal{background:var(--red-dim);border-color:var(--red);}
+.reveal-label{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;display:block;margin-bottom:6px;}
+.correct-reveal .reveal-label{color:var(--green);}
+.incorrect-reveal .reveal-label{color:var(--red);}
+/* COMPLETION */
+.completion-banner{background:linear-gradient(135deg,rgba(247,120,186,0.07),rgba(188,140,255,0.05));border:1px solid rgba(247,120,186,0.25);border-radius:12px;padding:40px;text-align:center;margin:32px 0;display:none;}
+.completion-banner.show{display:block;animation:fadeIn 0.4s ease;}
+.completion-banner h2{font-size:24px;color:var(--accent);margin-bottom:12px;}
+.section-footer{display:flex;justify-content:space-between;align-items:center;margin-top:44px;padding-top:20px;border-top:1px solid var(--border);gap:12px;}
+.divider{border:none;border-top:1px solid var(--border);margin:28px 0;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.cursor{display:inline-block;animation:blink 1s step-end infinite;color:var(--accent);}
+@media(max-width:640px){.container{padding:0 16px 60px;}.priority-btns{gap:4px;}.asset-header{flex-direction:column;}}
+</style>
+</head>
+<body>
+
+<div class="progress-track"><div class="progress-fill" id="progressBar"></div></div>
+
+<nav class="top-nav">
+  <div class="nav-inner">
+    <button class="nav-tab active" onclick="nav(0)" id="tab0"><span class="nav-dot"></span>Mission Brief</button>
+    <button class="nav-tab" onclick="nav(1)" id="tab1"><span class="nav-dot"></span>Migration Landscape</button>
+    <button class="nav-tab" onclick="nav(2)" id="tab2"><span class="nav-dot"></span>Asset Triage</button>
+    <button class="nav-tab" onclick="nav(3)" id="tab3"><span class="nav-dot"></span>Roadmap</button>
+    <button class="nav-tab" onclick="nav(4)" id="tab4"><span class="nav-dot"></span>Legacy Devices</button>
+    <button class="nav-tab" onclick="nav(5)" id="tab5"><span class="nav-dot"></span>Break It</button>
+    <button class="nav-tab" onclick="nav(6)" id="tab6"><span class="nav-dot"></span>Deliverable</button>
+    <button class="nav-tab" onclick="nav(7)" id="tab7"><span class="nav-dot"></span>Reflection</button>
+  </div>
+</nav>
+
+<!-- ══════════════════ SECTION 0 — MISSION BRIEF ══════════════════ -->
+<div class="section-wrap active" id="section0">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Lab 5 of 5 · Capstone · Post-Quantum Cryptography</div>
+    <h1>MedCore Health Systems: A Real Migration Crisis</h1>
+    <p style="font-size:15px;max-width:640px;margin-top:10px;">You have been hired as a cryptography consultant for MedCore Health Systems — a regional hospital network with 12 facilities, 2 million patient records, imaging systems from 2008, and 24/7 encrypted pharmacy communications. NIST's migration deadline is 2035. The clock is already running.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;">
+      <span class="badge badge-pink">⏱ Capstone — 120 Min</span>
+      <span class="badge badge-red">🏥 High Stakes</span>
+      <span class="badge badge-orange">📋 No Single Right Answer</span>
+      <span class="badge badge-purple">✍️ Written Deliverable</span>
+    </div>
+  </div>
+
+  <div class="terminal">
+    <div class="term-bar"><div class="term-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div><span class="term-title">medcore-briefing.txt — Consultant Intake Document</span></div>
+    <div class="term-body">
+      <div class="ok">MedCore Health Systems — Cryptographic Risk Assessment</div>
+      <div class="ok">Engagement Start: 2025-Q2 | NIST Deadline: 2035</div>
+      <div class="blank"></div>
+      <div class="out">Organization:   12 hospital facilities, southeastern region</div>
+      <div class="out">Patient Records: 2,100,000 (HIPAA-covered, PHI)</div>
+      <div class="out">Network:        Encrypted inter-facility VPN + imaging PACS</div>
+      <div class="out">Pharmacy:       Real-time encrypted drug dispensing comms (24/7)</div>
+      <div class="out">EMR System:     Epic on-premise, TLS 1.3</div>
+      <div class="blank"></div>
+      <div class="warn">[ RISK ] 3 imaging systems (2008 era): RSA-1024, no update path</div>
+      <div class="warn">[ RISK ] Hardware tokens: 12,000 units, RSA-2048, 3-yr replacement cycle</div>
+      <div class="warn">[ RISK ] VPN appliances: IPsec with IKEv2/Diffie-Hellman group 14</div>
+      <div class="warn">[ RISK ] Regulatory: HIPAA, HITECH, NC state health data regs</div>
+      <div class="blank"></div>
+      <div class="err">[ CRITICAL ] Intelligence suggests CRQC timeline may be 2028, not 2033+</div>
+      <div class="blank"></div>
+      <div class="out">Your deliverable: A prioritized migration plan for MedCore's board.</div>
+      <div class="out">Audience: Non-technical. Stakes: Patient safety + regulatory exposure.</div>
+      <div><span style="color:var(--accent);">$ </span><span>begin-consultation</span><span class="cursor">_</span></div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin:24px 0;">
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:6px;">Time Remaining</div>
+      <div style="font-size:20px;font-weight:700;color:var(--red);">≤10 Years</div>
+      <div style="font-size:12px;color:var(--text-muted);">2025 → 2035 NIST deadline. Possibly 3 years.</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:6px;">Systems to Migrate</div>
+      <div style="font-size:20px;font-weight:700;color:var(--orange);">8</div>
+      <div style="font-size:12px;color:var(--text-muted);">Across 5 criticality tiers. 3 unmigrateable.</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:6px;">Records at Risk</div>
+      <div style="font-size:20px;font-weight:700;color:var(--red);">2.1M</div>
+      <div style="font-size:12px;color:var(--text-muted);">PHI. HIPAA breach = $1.9M avg penalty.</div>
+    </div>
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:16px 18px;">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-dim);margin-bottom:6px;">Your Role</div>
+      <div style="font-size:20px;font-weight:700;color:var(--accent);">Consultant</div>
+      <div style="font-size:12px;color:var(--text-muted);">Advise the board. Justify every choice.</div>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <span class="callout-title">📌 How This Capstone Differs From Labs 1–4</span>
+    Labs 1–4 had right answers — specific cryptographic implementations with verifiable outputs. This capstone does not. You will make judgment calls that real consultants make: prioritizing under resource constraints, recommending options for systems that cannot be updated, and communicating technical risk to a non-technical audience. The quality of your reasoning matters more than the specific choices you make.
+  </div>
+
+  <div class="card">
+    <h2 style="margin-bottom:18px;">Your Capstone Deliverables</h2>
+    <div style="display:flex;flex-direction:column;">
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);">
+        <div style="width:28px;height:28px;border-radius:6px;background:var(--red-dim);color:var(--red);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">⚠</div>
+        <div><div style="font-weight:600;font-size:14px;color:var(--text);">Asset Triage — Prioritize all 8 MedCore systems</div><div style="font-size:13px;color:var(--text-muted);">Assign Critical / High / Medium / Low priority with written justification for each.</div></div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);">
+        <div style="width:28px;height:28px;border-radius:6px;background:var(--orange-dim);color:var(--orange);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">📅</div>
+        <div><div style="font-weight:600;font-size:14px;color:var(--text);">Phased Roadmap — 2025 through 2035</div><div style="font-size:13px;color:var(--text-muted);">Assign each system to one of four phases. Define the migration approach for each phase.</div></div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--border);">
+        <div style="width:28px;height:28px;border-radius:6px;background:var(--purple-dim);color:var(--purple);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">🏛</div>
+        <div><div style="font-weight:600;font-size:14px;color:var(--text);">Legacy Device Recommendation</div><div style="font-size:13px;color:var(--text-muted);">Evaluate three options for the 2008 MRI systems that cannot be software-updated.</div></div>
+      </div>
+      <div style="display:flex;gap:14px;align-items:flex-start;padding:12px 0;">
+        <div style="width:28px;height:28px;border-radius:6px;background:var(--accent-dim);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;">📄</div>
+        <div><div style="font-weight:600;font-size:14px;color:var(--text);">Board-Level Migration Plan (1–2 pages)</div><div style="font-size:13px;color:var(--text-muted);">Written for a non-technical audience. No jargon. Concrete risk scenarios. One immediate action.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <span style="font-size:12px;color:var(--text-dim);font-family:var(--mono);">SECTION 1 OF 8</span>
+    <button class="btn btn-primary" onclick="nav(1)">Section 2: Migration Landscape →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════ SECTION 1 — MIGRATION LANDSCAPE ══════════════════ -->
+<div class="section-wrap" id="section1">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Context · Migration Complexity Across Infrastructure Layers</div>
+    <h1>What You Are Actually Migrating</h1>
+    <p style="font-size:14px;max-width:600px;margin-top:10px;color:var(--text-muted);">Post-quantum migration is not one project — it is eight or more simultaneous projects with different owners, timelines, and constraints. This table is what makes it an organizational challenge, not just a technical one.</p>
+  </div>
+
+  <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:28px;">
+    <thead>
+      <tr>
+        <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Infrastructure Layer</th>
+        <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Current Algorithm</th>
+        <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Replacement</th>
+        <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Typical Timeline</th>
+        <th style="font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);background:var(--surface2);padding:10px 14px;border:1px solid var(--border);text-align:left;">Difficulty</th>
+      </tr>
+    </thead>
+    <tbody id="landscape-tbody">
+      <!-- populated by JS -->
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <span class="callout-title">⚠ Why Healthcare Is Uniquely Hard</span>
+    Medical devices are regulated by the FDA. Firmware updates require 510(k) clearance or PMA approval — a process that takes 3–5 years per device class and costs hundreds of thousands of dollars. A 2008 MRI system cannot simply receive a software patch to upgrade its cryptography. This is the hard constraint that drives all other decisions in this lab.
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0;">
+    <div class="card" style="border-color:rgba(248,81,73,0.3);">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--red);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">The Hard Constraint</div>
+      <div style="font-size:13px;color:var(--text-muted);line-height:1.8;">Systems that cannot be updated via software — old MRI, cardiac monitors, infusion pumps — require FDA-regulated hardware replacement. Budget: $800K–$2M per system. Lead time: 18–36 months. This cannot be accelerated by throwing money at it.</div>
+    </div>
+    <div class="card" style="border-color:rgba(63,185,80,0.35);">
+      <div style="font-family:var(--mono);font-size:10px;color:var(--green);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Quick Wins</div>
+      <div style="font-size:13px;color:var(--text-muted);line-height:1.8;">TLS on public-facing web servers can be migrated in days. Certificate renewal is automated. Cloud services can switch KMS algorithms in hours. These migrations cost almost nothing and should happen immediately — they are the "low-hanging fruit" that boards understand and approve quickly.</div>
+    </div>
+  </div>
+
+  <div class="callout blue">
+    <span class="callout-title">📊 Historical Precedent: Why 2035 Is Optimistic</span>
+    The SHA-1 deprecation was announced in 2011 with a 2017 deadline. As of 2024, SHA-1 is still found in active production systems — 7 years after the deadline. The MD5 deprecation (2004) still has legacy deployments in 2025. Large-scale cryptographic migrations consistently take 2–3× longer than planned. Plan accordingly.
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="nav(0)">← Mission Brief</button>
+    <button class="btn btn-primary" onclick="nav(2)">Begin Asset Triage →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════ SECTION 2 — ASSET TRIAGE ══════════════════ -->
+<div class="section-wrap" id="section2">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Exercise A · Asset Triage — 8 MedCore Systems</div>
+    <h1>Prioritize the Migration Queue</h1>
+    <p style="font-size:14px;max-width:620px;margin-top:10px;color:var(--text-muted);">Assign a migration priority to each MedCore asset. There is no single correct answer — you will defend your prioritization in the board deliverable. Write a brief justification for each choice.</p>
+  </div>
+
+  <div class="callout warn" style="margin-bottom:24px;">
+    <span class="callout-title">⚠ Priority Definitions</span>
+    <strong>Critical:</strong> Migrate in Phase 1 (2025–2026). Immediate quantum risk or regulatory exposure. &nbsp;|&nbsp; <strong>High:</strong> Phase 2 (2027–2028). Significant exposure, manageable timeline. &nbsp;|&nbsp; <strong>Medium:</strong> Phase 3 (2029–2031). Important but not immediately threatened. &nbsp;|&nbsp; <strong>Low:</strong> Phase 4 (2032–2035). Low sensitivity or easily re-signed later.
+  </div>
+
+  <div id="asset-list"></div>
+
+  <div id="triage-summary" style="display:none;margin-top:20px;" class="callout success">
+    <span class="callout-title">✅ Triage Complete</span>
+    <span id="triage-summary-text"></span>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="nav(1)">← Migration Landscape</button>
+    <button class="btn btn-primary" onclick="nav(3); buildRoadmap();">Build Migration Roadmap →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════ SECTION 3 — ROADMAP ══════════════════ -->
+<div class="section-wrap" id="section3">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Exercise B · Phased Migration Roadmap 2025–2035</div>
+    <h1>Four Phases. Ten Years. Eight Systems.</h1>
+    <p style="font-size:14px;max-width:620px;margin-top:10px;color:var(--text-muted);">Drag each system chip into a phase. Then describe the migration approach for that phase. Systems can be reassigned by dragging between phases.</p>
+  </div>
+
+  <div class="callout info" style="margin-bottom:20px;">
+    <span class="callout-title">📌 Note on Phase Assignments</span>
+    Your triage priorities from Exercise A are suggestions, not constraints. A "Critical" system that takes 3 years to procure replacement hardware may need to start in Phase 1 but complete in Phase 2. Think about start date vs. completion date.
+  </div>
+
+  <!-- Unassigned pool -->
+  <div class="unassigned-pool">
+    <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-dim);margin-bottom:10px;">Unassigned Systems — Drag to a Phase</div>
+    <div id="unassigned-pool" class="phase-drop" style="border-style:solid;border-color:var(--border);min-height:50px;"></div>
+  </div>
+
+  <!-- Phases -->
+  <div id="phases-container"></div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="nav(2)">← Asset Triage</button>
+    <button class="btn btn-primary" onclick="nav(4)">Legacy Device Options →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════ SECTION 4 — LEGACY DEVICES ══════════════════ -->
+<div class="section-wrap" id="section4">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Exercise C · Legacy Device Decision</div>
+    <h1>The 2008 MRI Systems Cannot Be Updated</h1>
+    <p style="font-size:14px;max-width:620px;margin-top:10px;color:var(--text-muted);">MedCore has three MRI imaging systems from 2008 using RSA-1024 for DICOM image signing. They cannot receive cryptographic software updates. They process protected health images 24/7. Evaluate the three options below.</p>
+  </div>
+
+  <div class="callout danger" style="margin-bottom:24px;">
+    <span class="callout-title">🚨 The Stakes</span>
+    RSA-1024 is already considered below NIST's minimum security threshold for new deployments (broken in 2009 via distributed computing for certain key sizes). A quantum computer would break it trivially. These systems are signing medical images used for diagnosis — a forged image signature could go undetected. This is not a theoretical risk.
+  </div>
+
+  <table class="legacy-table">
+    <thead>
+      <tr>
+        <th>Option</th>
+        <th>Description</th>
+        <th>Security Impact</th>
+        <th>Feasibility / Cost</th>
+        <th>Your Recommendation</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="font-weight:700;color:var(--text);white-space:nowrap;">A — Network Isolation</td>
+        <td>Segment MRI systems onto an air-gapped VLAN with no external network access. Signatures verified only within the isolated network.</td>
+        <td><textarea class="legacy-ta" placeholder="Describe security impact..." rows="3"></textarea></td>
+        <td><textarea class="legacy-ta" placeholder="Estimate cost and feasibility..." rows="3"></textarea></td>
+        <td>
+          <div class="legacy-radio">
+            <label class="lr"><input type="radio" name="leg-rec" value="A" onchange="legacySelect('A')"/> Recommend</label>
+            <label class="lr"><input type="radio" name="leg-rec" value="A-partial" onchange="legacySelect('A-partial')"/> Partial</label>
+            <label class="lr"><input type="radio" name="leg-rec" value="A-no" onchange="legacySelect('A-no')"/> Reject</label>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td style="font-weight:700;color:var(--text);white-space:nowrap;">B — PQ Proxy Gateway</td>
+        <td>Install a post-quantum-capable proxy between MRI systems and the network. The proxy re-signs outgoing DICOM data with ML-DSA before it leaves the isolated segment.</td>
+        <td><textarea class="legacy-ta" placeholder="Describe security impact..." rows="3"></textarea></td>
+        <td><textarea class="legacy-ta" placeholder="Estimate cost and feasibility..." rows="3"></textarea></td>
+        <td>
+          <div class="legacy-radio">
+            <label class="lr"><input type="radio" name="leg-rec" value="B" onchange="legacySelect('B')"/> Recommend</label>
+            <label class="lr"><input type="radio" name="leg-rec" value="B-partial" onchange="legacySelect('B-partial')"/> Partial</label>
+            <label class="lr"><input type="radio" name="leg-rec" value="B-no" onchange="legacySelect('B-no')"/> Reject</label>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td style="font-weight:700;color:var(--text);white-space:nowrap;">C — Hardware Replacement</td>
+        <td>Procure new MRI systems with ML-DSA and ML-KEM support. FDA-cleared devices with FIPS 204/203 capability are entering the market 2026–2027.</td>
+        <td><textarea class="legacy-ta" placeholder="Describe security impact..." rows="3"></textarea></td>
+        <td><textarea class="legacy-ta" placeholder="Estimate cost and feasibility..." rows="3"></textarea></td>
+        <td>
+          <div class="legacy-radio">
+            <label class="lr"><input type="radio" name="leg-rec" value="C" onchange="legacySelect('C')"/> Recommend</label>
+            <label class="lr"><input type="radio" name="leg-rec" value="C-partial" onchange="legacySelect('C-partial')"/> Partial</label>
+            <label class="lr"><input type="radio" name="leg-rec" value="C-no" onchange="legacySelect('C-no')"/> Reject</label>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div id="legacy-verdict" style="display:none;" class="callout" style="margin-top:16px;"></div>
+
+  <div class="callout purple" style="margin-top:20px;">
+    <span class="callout-title">💡 Model Answer Breakdown</span>
+    <strong>Option A alone is insufficient</strong> — isolation prevents new attacks but does not address already-harvested DICOM signatures stored in radiology archives from the past 15 years. <strong>Option B is the strongest near-term mitigation</strong> — the proxy adds quantum-resistant signing without touching the FDA-cleared device. It costs $50K–$150K vs. $1–2M for full replacement and can be deployed in months. <strong>Option C is the only permanent solution</strong> — but takes 18–36 months and costs $1–2M per unit. The recommended approach is B immediately + C on the normal capital replacement cycle (5–7 years). This is a real decision framework used in healthcare cybersecurity.
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="nav(3)">← Roadmap</button>
+    <button class="btn btn-primary" onclick="nav(5)">Break It Challenges →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════ SECTION 5 — BREAK IT ══════════════════ -->
+<div class="section-wrap" id="section5">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Break It · Two High-Stakes Scenarios</div>
+    <h1>The Timeline Collapses. The Budget Gets Cut.</h1>
+    <p style="font-size:14px;max-width:580px;margin-top:10px;color:var(--text-muted);">Two challenges that test whether your plan survives contact with reality. Both require organizational communication skills, not just technical ones.</p>
+  </div>
+
+  <!-- Challenge 1: Accelerated Timeline -->
+  <div style="background:linear-gradient(135deg,rgba(248,81,73,0.06),rgba(227,179,65,0.03));border:1px solid rgba(248,81,73,0.25);border-radius:12px;padding:28px;margin-bottom:24px;">
+    <div style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--red);margin-bottom:8px;">💥 Challenge 1 — Accelerated Timeline</div>
+
+    <div class="terminal" style="margin-bottom:20px;">
+      <div class="term-bar"><div class="term-dots"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div></div><span class="term-title">classified-intel-brief.txt</span></div>
+      <div class="term-body" style="padding:16px 22px;">
+        <div class="err">[ CLASSIFIED ] NSA Cybersecurity Advisory — 2025-Q2</div>
+        <div class="blank"></div>
+        <div class="warn">Intelligence assessment revised: Cryptographically Relevant Quantum Computer</div>
+        <div class="warn">arrival probability 40% by 2028. Previous estimate: 2033–2038.</div>
+        <div class="blank"></div>
+        <div class="out">This assessment is based on classified advances in error correction.</div>
+        <div class="out">Public disclosure expected within 12 months.</div>
+        <div class="blank"></div>
+        <div class="err">[ ACTION ] Organizations with HIPAA obligations should treat this as material</div>
+        <div class="err">[ ACTION ] risk. 2035 deadline insufficient given updated timeline.</div>
+      </div>
+    </div>
+
+    <p style="font-size:14px;margin-bottom:16px;">Your 10-year roadmap needs a Phase 1 revision. You now have <strong>3 years</strong>, not 10. Which systems must be in Phase 1 under the accelerated timeline? Then write a board-level email communicating this urgency — no technical jargon, concrete risk scenario, clear ask.</p>
+
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="margin-top:0;color:var(--red);">Revised Phase 1 (2025–2028) — List the systems you would accelerate and why</h3>
+      <textarea style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;padding:12px 14px;font-family:var(--sans);font-size:13px;color:var(--text);resize:vertical;outline:none;min-height:100px;line-height:1.8;transition:border-color 0.2s;" id="accel-text" placeholder="List which systems you would accelerate into Phase 1 and justify your selection. Consider: which systems represent the highest risk if a CRQC arrives in 2028? Which can realistically be migrated in 3 years given procurement, FDA, and budget constraints?" oninput="wc('accel-text','accel-wc')"></textarea>
+      <div class="word-counter" id="accel-wc">0 words</div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0;color:var(--red);">Board Email — Communicating Quantum Urgency</h3>
+      <p style="font-size:13px;margin-bottom:14px;">Write a brief email to the MedCore board chair. <strong>No acronyms. No technical jargon.</strong> Use one concrete scenario a non-technical executive will understand. Include a specific ask (budget, timeline, decision).</p>
+      <div class="email-editor">
+        <div class="email-fields">
+          <div class="email-field"><span>TO:</span><input type="text" value="Board of Directors, MedCore Health Systems" readonly/></div>
+          <div class="email-field"><span>FROM:</span><input type="text" placeholder="Your name and title"/></div>
+          <div class="email-field"><span>RE:</span><input type="text" placeholder="Subject line — aim for clarity, not alarmism"/></div>
+        </div>
+        <div class="email-body-area">
+          <textarea id="email-body" placeholder="Write your email here. A strong email will:
+— Open with a concrete risk scenario (not 'quantum computers are coming')
+— Quantify the potential impact (patient data, regulatory fines, operational disruption)
+— Present a clear recommendation with a specific timeline and budget ask
+— Close with a single decision request
+
+Aim for 150–250 words. Boards do not read long memos." oninput="wc('email-body','email-wc')"></textarea>
+        </div>
+      </div>
+      <div class="word-counter" id="email-wc">0 words</div>
+    </div>
+  </div>
+
+  <!-- Challenge 2: Budget Constraint -->
+  <div style="background:linear-gradient(135deg,rgba(188,140,255,0.05),rgba(247,120,186,0.03));border:1px solid rgba(188,140,255,0.25);border-radius:12px;padding:28px;">
+    <div style="font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--purple);margin-bottom:8px;">🧠 Challenge 2 — Budget Constraint</div>
+    <p style="font-size:14px;margin-bottom:8px;">The CFO has approved budget for migrating exactly <strong>three systems in 2026</strong>. You must select those three from the full MedCore inventory and present a justification to the board in plain language — grounded in concrete risk scenarios, not technical metrics.</p>
+    <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">Select three systems below and write a one-sentence board-level justification for each. Your justification should explain what specifically goes wrong if this system is not migrated — not why it scores high on a risk matrix.</p>
+
+    <div id="budget-asset-list"></div>
+
+    <div id="budget-selected-count" style="font-family:var(--mono);font-size:12px;color:var(--text-dim);margin:12px 0;">Selected: 0 / 3</div>
+
+    <div id="budget-summary" style="display:none;margin-top:16px;" class="callout purple">
+      <span class="callout-title">📋 Your 2026 Priority Selection</span>
+      <span id="budget-summary-text"></span>
+    </div>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="nav(4)">← Legacy Devices</button>
+    <button class="btn btn-primary" onclick="nav(6)">Write Deliverable →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════ SECTION 6 — DELIVERABLE ══════════════════ -->
+<div class="section-wrap" id="section6">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Deliverable · Board Migration Plan — 1–2 Pages</div>
+    <h1>Write the MedCore Migration Plan</h1>
+    <p style="font-size:14px;max-width:620px;margin-top:10px;color:var(--text-muted);">This is your capstone deliverable. Written for the MedCore board — not for a technical audience. Each section has a required element. Aim for clarity, specificity, and appropriate urgency without alarmism.</p>
+  </div>
+
+  <div class="callout info" style="margin-bottom:28px;">
+    <span class="callout-title">📌 Audience Note</span>
+    Board members are executives, not cryptographers. They understand business risk, regulatory exposure, and budget. They do not understand HKDF or LWE. Your plan should translate every technical point into its organizational consequence. "RSA-1024 is broken" becomes "the encryption protecting our MRI image archives can be cracked by technology that is commercially available within 5–8 years."
+  </div>
+
+  <!-- Section 1: Risk Summary -->
+  <div class="deliverable-section">
+    <div class="deliverable-label">1. Risk Summary — What Is the Threat and Why Does It Matter to MedCore?</div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Required: Explain the quantum cryptography threat in terms a board member understands. Reference at least one specific MedCore consequence (regulatory, operational, or patient safety).</p>
+    <textarea class="deliverable-textarea" id="del-1" rows="6" placeholder="Example opening: 'Advances in quantum computing — a type of processor being developed by major technology companies and governments — will within the next 5–10 years make the encryption currently protecting MedCore patient data trivially breakable...'" oninput="wc('del-1','del-1-wc')"></textarea>
+    <div class="word-counter" id="del-1-wc">0 words</div>
+  </div>
+
+  <!-- Section 2: Priority List -->
+  <div class="deliverable-section">
+    <div class="deliverable-label">2. Prioritized Asset List — Three Sentences Per System Maximum</div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Required: List all 8 MedCore systems in your recommended priority order. For each, explain in plain language what it does, why it is at risk, and what migration involves. No technical algorithm names.</p>
+    <textarea class="deliverable-textarea" id="del-2" rows="12" placeholder="Priority 1: [System name] — [What it does in plain language]. [Why it is most urgent: specific consequence if not migrated]. [What migration involves: hardware, software, timeline]..." oninput="wc('del-2','del-2-wc')"></textarea>
+    <div class="word-counter" id="del-2-wc">0 words</div>
+  </div>
+
+  <!-- Section 3: Timeline -->
+  <div class="deliverable-section">
+    <div class="deliverable-label">3. Phased Timeline — Four Phases, 2025–2035</div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Required: Summarize your four-phase roadmap. Include which systems are in each phase, what needs to happen for the phase to begin, and any dependencies between phases.</p>
+    <textarea class="deliverable-textarea" id="del-3" rows="8" placeholder="Phase 1 (2025–2026): Immediate actions — [systems]. These can be completed quickly because [reason]. Cost estimate: [range]..." oninput="wc('del-3','del-3-wc')"></textarea>
+    <div class="word-counter" id="del-3-wc">0 words</div>
+  </div>
+
+  <!-- Section 4: Legacy -->
+  <div class="deliverable-section">
+    <div class="deliverable-label">4. Legacy Device Recommendation — The 2008 MRI Systems</div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Required: Explain the specific problem with the imaging systems in plain language. Present your recommended approach (from Exercise C) with rationale a board member can approve or contest.</p>
+    <textarea class="deliverable-textarea" id="del-4" rows="6" placeholder="MedCore's three oldest imaging systems present a unique challenge: unlike software systems, they cannot be updated remotely and require regulatory approval for any cryptographic changes..." oninput="wc('del-4','del-4-wc')"></textarea>
+    <div class="word-counter" id="del-4-wc">0 words</div>
+  </div>
+
+  <!-- Section 5: Immediate action -->
+  <div class="deliverable-section">
+    <div class="deliverable-label">5. One Immediate Low-Cost Action — What MedCore Can Do This Week</div>
+    <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">Required: Identify one action that costs little or nothing, can be started immediately, and meaningfully reduces risk. This is the "quick win" that gives the board early momentum.</p>
+    <textarea class="deliverable-textarea" id="del-5" rows="4" placeholder="Immediate recommendation: [Specific action]. This can be completed within [timeframe], costs approximately [amount], and reduces risk by [specific consequence prevented]..." oninput="wc('del-5','del-5-wc')"></textarea>
+    <div class="word-counter" id="del-5-wc">0 words</div>
+  </div>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px;">
+    <button class="btn btn-primary" onclick="checkDeliverable()">✓ Check Deliverable Completeness</button>
+    <button class="btn btn-ghost btn-sm" onclick="clearDeliverable()">Clear All</button>
+  </div>
+  <div id="deliverable-check" style="display:none;margin-top:16px;" class="callout"></div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="nav(5)">← Break It</button>
+    <button class="btn btn-primary" onclick="nav(7)">Final Reflection →</button>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════ SECTION 7 — REFLECTION ══════════════════ -->
+<div class="section-wrap" id="section7">
+<div class="container">
+  <div class="section-header">
+    <div class="section-eyebrow">Reflection · Capstone + PQC Series Close</div>
+    <h1>The Hard Questions That Don't Have Clean Answers</h1>
+    <p style="font-size:14px;max-width:600px;margin-top:10px;color:var(--text-muted);">Three questions that close the PQC series — connecting technical implementation to organizational reality and professional ethics.</p>
+  </div>
+
+  <div class="reflect-card">
+    <div class="reflect-q">1. Based on historical patterns in large-scale cryptographic transitions (SHA-1, MD5, DES, RC4), what is the most likely outcome for the NIST 2035 migration deadline?</div>
+    <div class="ref-opts" id="rq1-opts">
+      <div class="ref-opt" onclick="doRef('rq1',0,false)"><div class="ref-letter">A</div><span>Most critical infrastructure will meet the 2035 deadline because NIST enforcement mechanisms create compliance pressure.</span></div>
+      <div class="ref-opt" onclick="doRef('rq1',1,false)"><div class="ref-letter">B</div><span>The transition will be complete by 2035 for new deployments, but legacy systems will lag by 3–5 years on average.</span></div>
+      <div class="ref-opt" onclick="doRef('rq1',2,true)"><div class="ref-letter">C</div><span>Historical precedent strongly suggests the 2035 deadline will not be met by a significant portion of critical infrastructure. SHA-1 deprecation (announced 2011, deadline 2017) had active deployments in 2024 — 7 years after its deadline. MD5 (deprecated 2004) still runs in production in 2025. Large organizations consistently underestimate migration complexity. The most likely outcome is a 2035 deadline with 30–50% of critical infrastructure still running classical-only algorithms, creating a period of elevated risk during the CRQC transition window.</span></div>
+      <div class="ref-opt" onclick="doRef('rq1',3,false)"><div class="ref-letter">D</div><span>The deadline will be extended to 2040+ because CRQC timelines have historically been overestimated.</span></div>
+    </div>
+    <div class="answer-reveal" id="rq1-reveal"></div>
+  </div>
+
+  <div class="reflect-card">
+    <div class="reflect-q">2. MedCore's 2008 MRI systems cannot be cryptographically updated and handle protected health images used for diagnosis. No PQ proxy has yet been deployed. What is the organization's ethical obligation during this window?</div>
+    <div class="ref-opts" id="rq2-opts">
+      <div class="ref-opt" onclick="doRef('rq2',0,false)"><div class="ref-letter">A</div><span>None — the organization is operating within currently accepted security standards, and quantum computers do not yet exist at scale.</span></div>
+      <div class="ref-opt" onclick="doRef('rq2',1,false)"><div class="ref-letter">B</div><span>Disclose the vulnerability to patients so they can consent to having their data processed by potentially vulnerable systems.</span></div>
+      <div class="ref-opt" onclick="doRef('rq2',2,true)"><div class="ref-letter">C</div><span>Organizations operating systems that handle sensitive data under a known, foreseeable cryptographic vulnerability have an obligation to: (1) document the risk formally in their risk register, (2) implement compensating controls immediately (network isolation, proxy signing, access logging), (3) accelerate procurement of replacement hardware, and (4) disclose to regulators if the vulnerability creates material HIPAA risk. "The technology does not yet exist to exploit this" is not a defense against the obligation to mitigate known risks — particularly under harvest-now-decrypt-later attacks, where today's data is already being collected for future decryption.</span></div>
+      <div class="ref-opt" onclick="doRef('rq2',3,false)"><div class="ref-letter">D</div><span>Immediately shut down the MRI systems until they can be replaced — patient safety requires zero tolerance for cryptographic risk.</span></div>
+    </div>
+    <div class="answer-reveal" id="rq2-reveal"></div>
+  </div>
+
+  <div class="reflect-card">
+    <div class="reflect-q">3. Across this five-lab series you implemented ML-KEM, ML-DSA, hybrid key exchange, and a full migration plan. Which of the following best describes the single most important lesson from the series?</div>
+    <div class="ref-opts" id="rq3-opts">
+      <div class="ref-opt" onclick="doRef('rq3',0,false)"><div class="ref-letter">A</div><span>Post-quantum algorithms are drop-in replacements for classical algorithms — migration is primarily a software update problem.</span></div>
+      <div class="ref-opt" onclick="doRef('rq3',1,false)"><div class="ref-letter">B</div><span>The primary challenge of PQC migration is performance — ML-KEM and ML-DSA are significantly slower than their classical counterparts.</span></div>
+      <div class="ref-opt" onclick="doRef('rq3',2,false)"><div class="ref-letter">C</div><span>Quantum computers will definitively break all current cryptography by 2030, creating an urgent deadline with no flexibility.</span></div>
+      <div class="ref-opt" onclick="doRef('rq3',3,true)"><div class="ref-letter">D</div><span>Post-quantum migration is simultaneously a technical implementation problem, an organizational change management problem, a regulatory compliance problem, and an ethical obligation — and the hardest part is not the cryptography. The algorithms are standardized, the libraries exist, and the performance is acceptable. The hard part is identifying every system that needs migration, prioritizing under resource constraints, managing legacy devices that cannot be updated, communicating risk to non-technical decision-makers, and sustaining organizational will over a multi-year program. Technical knowledge of ML-KEM and ML-DSA is necessary but not sufficient — you also need to be able to write the board email.</span></div>
+    </div>
+    <div class="answer-reveal" id="rq3-reveal"></div>
+  </div>
+
+  <!-- Series Completion -->
+  <div class="completion-banner" id="completionBanner">
+    <div style="font-size:56px;margin-bottom:16px;">🔐</div>
+    <h2>Post-Quantum Cryptography Series Complete</h2>
+    <p style="max-width:600px;margin:0 auto 16px;color:var(--text-muted);">You have completed all five labs in the PQC education series. You can now explain the quantum threat model, implement ML-KEM and ML-DSA from scratch, build a hybrid key exchange with HKDF, analyze the security of combination methods, and produce a board-level migration plan for a complex real-world organization.</p>
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:20px 24px;max-width:640px;margin:0 auto 20px;text-align:left;">
+      <div style="font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--accent);margin-bottom:12px;">Series Completion Checklist</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <span class="badge badge-green" style="justify-content:flex-start;">✓ Lab 1: Quantum Threat Model</span>
+        <span class="badge badge-green" style="justify-content:flex-start;">✓ Lab 2: ML-KEM Key Exchange</span>
+        <span class="badge badge-green" style="justify-content:flex-start;">✓ Lab 3: ML-DSA Signatures</span>
+        <span class="badge badge-green" style="justify-content:flex-start;">✓ Lab 4: Hybrid Cryptography</span>
+        <span class="badge badge-pink" style="justify-content:flex-start;">✓ Lab 5: Migration Planning</span>
+        <span class="badge badge-blue" style="justify-content:flex-start;">✓ Board Communication</span>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--text-muted);max-width:540px;margin:0 auto;">NIST FIPS 203, 204, and 205 are deployed. The migration window is open. The skills you have developed in this series are directly applicable to real infrastructure decisions being made right now at organizations across every sector.</p>
+  </div>
+
+  <div class="section-footer">
+    <button class="btn btn-ghost" onclick="nav(6)">← Deliverable</button>
+    <button class="btn btn-green" onclick="finishLab()">Complete PQC Series →</button>
+  </div>
+</div>
+</div>
+
+<style>
+.legacy-ta{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:8px 10px;font-family:var(--sans);font-size:12px;color:var(--text-muted);resize:vertical;outline:none;min-height:60px;line-height:1.6;}
+.legacy-ta:focus{color:var(--text);border-color:var(--accent);}
+</style>
+
+<script>
+// ─── STATE ───
+const St={visited:new Set([0]),priorities:{},budgetSelected:[],reflectDone:new Set(),legacyRec:null};
+
+// ─── ASSETS ───
+const ASSETS=[
+  {id:'emr',name:'Epic EMR — Electronic Medical Records',algo:'TLS 1.3 (ECDH P-256)',age:'2021 (cloud hosted)',sensitivity:'Critical',updateable:true,body:'Hosts 2.1 million patient records including diagnoses, prescriptions, and treatment history. TLS protects in-transit data; at rest encryption uses AES-256. The TLS key exchange is vulnerable to harvest-now-decrypt-later. Epic releases regular security updates and the cloud provider supports ML-KEM.'},
+  {id:'pacs',name:'PACS — Medical Imaging Archive',algo:'RSA-2048 (DICOM signing)',age:'2015',sensitivity:'Critical',updateable:true,body:'Stores and transmits diagnostic imaging (X-ray, CT, MRI) across 12 facilities. Images are signed with RSA-2048. DICOM signing keys could be targeted for future forgery. Vendor confirmed ML-DSA support available in 2025 firmware update.'},
+  {id:'mri',name:'MRI Systems (×3) — Legacy Imaging',algo:'RSA-1024 (firmware signed)',age:'2008',sensitivity:'Critical',updateable:false,body:'Three GE Discovery MRI units from 2008. Firmware is signed with RSA-1024. Cryptographic functions are hardwired — no software update path exists. FDA Class II clearance required for any hardware modification. These cannot be patched.'},
+  {id:'vpn',name:'Inter-Facility VPN — IPsec IKEv2',algo:'DH Group 14 (2048-bit)',age:'2019',sensitivity:'High',updateable:true,body:'Encrypts traffic between all 12 MedCore facilities. Uses IKEv2 with Diffie-Hellman Group 14. Cisco firewall supports ML-KEM hybrid mode via firmware update. Inter-facility traffic includes pharmacy orders, lab results, and patient transfers.'},
+  {id:'pharmacy',name:'Pharmacy Dispensing Comms',algo:'AES-256 + RSA-2048 key exchange',age:'2020',sensitivity:'Critical',updateable:true,body:'Real-time encrypted communications between pharmacy systems and dispensing robots. A compromised key exchange could allow a man-in-the-middle to alter drug dosing instructions. 24/7 availability required — migration must be zero-downtime. Vendor supports hybrid mode.'},
+  {id:'hsm',name:'Hardware Security Modules (×6)',algo:'RSA-2048 key storage',age:'2018',sensitivity:'High',updateable:false,body:'Thales Luna HSMs used for key management across all facilities. Model discontinued; no firmware path to PQC. Replacement HSMs supporting ML-KEM/ML-DSA are available but require full key ceremony re-provisioning — an 18-month compliance project per facility.'},
+  {id:'portal',name:'Patient Portal — Public Web',algo:'ECDH P-256 (TLS)',age:'2023',sensitivity:'Low',updateable:true,body:'Patient-facing web portal for appointment scheduling, lab result viewing, and billing. Low-sensitivity data (no PHI in transit). Let\'s Encrypt TLS certificate auto-renewed every 90 days. Cloudflare already supports X25519+ML-KEM-768 hybrid — migration is a single configuration change.'},
+  {id:'backup',name:'Offsite Backup Encryption',algo:'RSA-2048 + AES-256',age:'2017',sensitivity:'High',updateable:true,body:'Encrypts backup tapes sent to an Iron Mountain offsite facility. The RSA key wraps the AES key. A quantum adversary who obtains the backup tapes and a CRQC could decrypt the RSA wrapping key and recover the AES session key. Archives go back 15 years. Backup software vendor supports PQ key wrapping.'},
+];
+
+const PHASES=[
+  {id:'p1',label:'Phase 1',years:'2025–2026',cls:'phase-1',desc:'Immediate actions. Quick wins and highest-risk systems that can be migrated without hardware replacement.'},
+  {id:'p2',label:'Phase 2',years:'2027–2028',cls:'phase-2',desc:'Planned migrations. Systems requiring vendor coordination, procurement, or moderate complexity.'},
+  {id:'p3',label:'Phase 3',years:'2029–2031',cls:'phase-3',desc:'Complex migrations. Long-lead-time hardware, HSM re-provisioning, legacy device proxies.'},
+  {id:'p4',label:'Phase 4',years:'2032–2035',cls:'phase-4',desc:'Final push. Remaining systems, compliance verification, audit preparation for 2035 deadline.'},
+];
+
+// ─── NAV ───
+function nav(i){
+  document.querySelectorAll('.section-wrap').forEach((s,j)=>s.classList.toggle('active',j===i));
+  document.querySelectorAll('.nav-tab').forEach((t,j)=>t.classList.toggle('active',j===i));
+  St.visited.add(i);
+  document.getElementById('progressBar').style.width=(St.visited.size/8*100)+'%';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ─── LANDSCAPE TABLE ───
+(function(){
+  const rows=[
+    ['TLS Certificates','ECDH P-256 / RSA-2048','X25519+ML-KEM-768 (hybrid)','3–12 months','Low — software config change'],
+    ['Software Code Signing','ECDSA / RSA-PSS','ML-DSA-65 or ML-DSA-87','6–18 months','Medium — pipeline changes + re-signing'],
+    ['VPN / IPsec','DH Groups 14–21','ML-KEM + X25519 IKEv2','12–24 months','Medium — firmware + policy updates'],
+    ['Hardware Security Modules','RSA-2048 / ECC','ML-KEM/ML-DSA capable HSMs','18–36 months','High — hardware replacement + key ceremony'],
+    ['Legacy Embedded Systems','RSA-1024 / RSA-2048','Proxy gateway or hardware replacement','24–60 months','Very High — regulatory + procurement'],
+    ['CA / PKI Infrastructure','RSA-2048 cert chains','ML-DSA certificate hierarchy','24–48 months','High — trust anchor changes, revocation'],
+    ['Backup / Archive Encryption','RSA key wrapping','ML-KEM key encapsulation','6–18 months','Low–Medium — software update'],
+    ['Regulatory Compliance','Varies','FIPS 203/204/205 attestation','Ongoing','High — audit, documentation, legal review'],
+  ];
+  const colors=['var(--green)','var(--green)','var(--orange)','var(--orange)','var(--red)','var(--orange)','var(--green)','var(--red)'];
+  document.getElementById('landscape-tbody').innerHTML=rows.map((r,i)=>`
+    <tr>
+      <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-weight:600;font-size:13px;color:var(--text);">${r[0]}</td>
+      <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:11px;color:var(--red);">${r[1]}</td>
+      <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-family:var(--mono);font-size:11px;color:var(--green);">${r[2]}</td>
+      <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--text-muted);">${r[3]}</td>
+      <td style="padding:10px 14px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:${colors[i]};font-weight:600;">${r[4]}</td>
+    </tr>`).join('');
+})();
+
+// ─── ASSET TRIAGE ───
+function buildAssets(){
+  const el=document.getElementById('asset-list');
+  el.innerHTML=ASSETS.map(a=>`
+    <div class="asset-card" id="ac-${a.id}">
+      <div class="asset-header">
+        <div>
+          <div class="asset-name">${a.name}</div>
+          <div class="asset-meta">
+            <span class="badge ${a.sensitivity==='Critical'?'badge-red':a.sensitivity==='High'?'badge-orange':'badge-blue'}">${a.sensitivity} Sensitivity</span>
+            <span class="badge badge-purple">${a.age}</span>
+            ${a.updateable?'<span class="badge badge-green">✓ Software Updateable</span>':'<span class="badge badge-red">✗ Hardware Only</span>'}
+          </div>
+        </div>
+        <div style="font-family:var(--mono);font-size:11px;color:var(--orange);background:var(--orange-dim);padding:4px 10px;border-radius:4px;border:1px solid rgba(227,179,65,0.3);white-space:nowrap;">${a.algo}</div>
+      </div>
+      <div class="asset-body">${a.body}</div>
+      <div class="priority-btns">
+        <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-right:6px;align-self:center;">Priority:</span>
+        <button class="pb pb-critical" id="pb-${a.id}-critical" onclick="setPriority('${a.id}','critical')">Critical</button>
+        <button class="pb pb-high" id="pb-${a.id}-high" onclick="setPriority('${a.id}','high')">High</button>
+        <button class="pb pb-medium" id="pb-${a.id}-medium" onclick="setPriority('${a.id}','medium')">Medium</button>
+        <button class="pb pb-low" id="pb-${a.id}-low" onclick="setPriority('${a.id}','low')">Low</button>
+      </div>
+      <textarea class="asset-justify" id="aj-${a.id}" placeholder="Justify your priority choice (2–3 sentences). Consider: data sensitivity, HNDL exposure, update feasibility, regulatory consequence..." oninput="wc('aj-${a.id}','')"></textarea>
+    </div>`).join('');
+}
+buildAssets();
+
+function setPriority(id,level){
+  St.priorities[id]=level;
+  const card=document.getElementById('ac-'+id);
+  card.className='asset-card priority-'+level;
+  ['critical','high','medium','low'].forEach(l=>{
+    const b=document.getElementById('pb-'+id+'-'+l);
+    if(b)b.classList.toggle('selected',l===level);
+  });
+  const done=Object.keys(St.priorities).length;
+  if(done>=8){
+    const summary=document.getElementById('triage-summary');
+    summary.style.display='block';
+    const counts={critical:0,high:0,medium:0,low:0};
+    Object.values(St.priorities).forEach(v=>counts[v]=(counts[v]||0)+1);
+    document.getElementById('triage-summary-text').innerHTML=`All 8 systems prioritized: <strong style="color:var(--red);">${counts.critical||0} Critical</strong>, <strong style="color:var(--orange);">${counts.high||0} High</strong>, <strong style="color:var(--blue);">${counts.medium||0} Medium</strong>, <strong style="color:var(--green);">${counts.low||0} Low</strong>. Proceed to the Roadmap to assign phases.`;
+  }
+}
+
+// ─── ROADMAP ───
+let dragSrc=null;
+function buildRoadmap(){
+  const pool=document.getElementById('unassigned-pool');
+  pool.innerHTML='';
+  ASSETS.forEach(a=>{
+    const chip=makeChip(a);
+    pool.appendChild(chip);
+  });
+  const pc=document.getElementById('phases-container');
+  pc.innerHTML='';
+  PHASES.forEach(ph=>{
+    pc.innerHTML+=`
+      <div class="phase-block">
+        <div class="phase-header">
+          <span class="phase-badge ${ph.cls}">${ph.label} · ${ph.years}</span>
+          <span style="font-size:13px;color:var(--text-muted);">${ph.desc}</span>
+        </div>
+        <div class="phase-drop" id="drop-${ph.id}" ondragover="event.preventDefault();this.classList.add('drag-over');" ondragleave="this.classList.remove('drag-over');" ondrop="dropChip(event,'${ph.id}')"></div>
+        <textarea class="phase-approach" placeholder="Migration approach for ${ph.label}: What specifically needs to happen? Who is responsible? What are the dependencies or risks for this phase?" rows="3"></textarea>
+      </div>`;
+  });
+  // also pool drop
+  pool.ondragover=e=>{e.preventDefault();pool.classList.add('drag-over');};
+  pool.ondragleave=()=>pool.classList.remove('drag-over');
+  pool.ondrop=e=>{e.preventDefault();pool.classList.remove('drag-over');if(dragSrc)pool.appendChild(dragSrc);dragSrc=null;};
+}
+function makeChip(a){
+  const chip=document.createElement('div');
+  chip.className='phase-chip'; chip.id='chip-'+a.id; chip.draggable=true;
+  const pri=St.priorities[a.id]||'unset';
+  const priColor=pri==='critical'?'var(--red)':pri==='high'?'var(--orange)':pri==='medium'?'var(--blue)':pri==='low'?'var(--green)':'var(--text-dim)';
+  chip.innerHTML=`<span style="width:8px;height:8px;border-radius:50%;background:${priColor};flex-shrink:0;"></span>${a.name.split('—')[0].trim()}`;
+  chip.ondragstart=()=>{dragSrc=chip;chip.classList.add('dragging');};
+  chip.ondragend=()=>chip.classList.remove('dragging');
+  return chip;
+}
+function dropChip(e,phaseId){
+  e.preventDefault();
+  document.querySelectorAll('.phase-drop').forEach(d=>d.classList.remove('drag-over'));
+  if(dragSrc) document.getElementById('drop-'+phaseId).appendChild(dragSrc);
+  dragSrc=null;
+}
+
+// ─── LEGACY ───
+function legacySelect(val){
+  St.legacyRec=val;
+  const v=document.getElementById('legacy-verdict');
+  v.style.display='block';
+  const letter=val.split('-')[0];
+  v.className='callout '+(letter==='B'?'success':letter==='C'?'blue':'warn');
+  const msgs={
+    A:'Option A alone provides limited protection. Isolation prevents new attacks but does not address the 15 years of already-harvested DICOM signatures stored in radiology archives. A quantum adversary who already has those archives can still forge historical image signatures retroactively.',
+    'A-partial':'Partial credit — isolation is a necessary compensating control, but insufficient alone. Combine with Option B for meaningful protection.',
+    B:'Strong near-term choice. A PQ proxy gateway re-signs outgoing DICOM data with ML-DSA, providing quantum-resistant authentication without touching the FDA-cleared device. Deployable in 3–6 months at $50K–$150K per facility. <strong style="color:var(--green);">Recommended as immediate action.</strong>',
+    'B-partial':'Option B is the strongest near-term mitigation. Rejecting or partially accepting it without a clear alternative leaves the imaging systems unprotected during the most dangerous harvest window.',
+    C:'The permanent solution — but timeline (18–36 months) and cost ($1–2M per unit) make it unsuitable as an immediate response. Best planned on the normal capital replacement cycle.',
+    'C-partial':'Hardware replacement is the right long-term strategy, but the timeline makes it insufficient as the only response. Combine B (immediate) + C (long-term).',
+    'A-no':'Rejecting network isolation entirely is risky — even as a stopgap, isolation limits the attack surface while other controls are deployed.',
+    'B-no':'Rejecting the proxy gateway leaves the legacy systems with no quantum-resistant mitigation until hardware replacement (18–36 months away). This is a significant risk gap during the CRQC window.',
+    'C-no':'Rejecting hardware replacement means the 2008 MRI systems will never be quantum-safe. This is only defensible if the proxy gateway permanently replaces them — which introduces its own single-point-of-failure risk.',
+  };
+  v.innerHTML=`<span class="callout-title">${val.includes('no')?'✗ Rejected':'✓ Selected'}: Option ${letter}</span>${msgs[val]||''}`;
+}
+
+// ─── BUDGET PICKER ───
+function buildBudgetPicker(){
+  const el=document.getElementById('budget-asset-list');
+  if(!el)return;
+  el.innerHTML=ASSETS.map(a=>`
+    <div class="budget-asset" id="ba-${a.id}" onclick="toggleBudget('${a.id}')">
+      <div class="ba-check" id="bac-${a.id}"></div>
+      <div style="flex:1;">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div class="ba-name">${a.name.split('—')[0].trim()}</div>
+          <span class="badge ${a.sensitivity==='Critical'?'badge-red':a.sensitivity==='High'?'badge-orange':'badge-blue'}" style="font-size:9px;">${a.sensitivity}</span>
+        </div>
+        <div class="ba-meta">${a.algo} · ${a.age} · ${a.updateable?'Software updateable':'Hardware only'}</div>
+        <textarea class="ba-justify" id="baj-${a.id}" onclick="event.stopPropagation()" placeholder="One sentence: What specifically goes wrong if we do NOT migrate this system in 2026?" rows="2"></textarea>
+      </div>
+    </div>`).join('');
+}
+function toggleBudget(id){
+  const el=document.getElementById('ba-'+id);
+  const check=document.getElementById('bac-'+id);
+  const jta=document.getElementById('baj-'+id);
+  const already=St.budgetSelected.includes(id);
+  if(already){
+    St.budgetSelected=St.budgetSelected.filter(x=>x!==id);
+    el.classList.remove('budget-selected');
+    check.innerHTML=''; check.style.background=''; check.style.borderColor='';
+    jta.classList.remove('show');
+  } else {
+    if(St.budgetSelected.length>=3){return;}
+    St.budgetSelected.push(id);
+    el.classList.add('budget-selected');
+    check.innerHTML='✓'; check.style.background='var(--accent)'; check.style.borderColor='var(--accent)'; check.style.color='#08090c';
+    jta.classList.add('show');
+  }
+  document.getElementById('budget-selected-count').textContent=`Selected: ${St.budgetSelected.length} / 3`;
+  if(St.budgetSelected.length>=3){
+    document.querySelectorAll('.budget-asset').forEach(el=>{
+      const bid=el.id.replace('ba-','');
+      if(!St.budgetSelected.includes(bid)) el.classList.add('budget-disabled');
+    });
+    const sum=document.getElementById('budget-summary');
+    sum.style.display='block';
+    document.getElementById('budget-summary-text').innerHTML='You selected: <strong>'+St.budgetSelected.map(id=>ASSETS.find(a=>a.id===id)?.name.split('—')[0].trim()).join(', ')+'</strong>. Write your board-level justifications in the text boxes above each selected system.';
+  } else {
+    document.querySelectorAll('.budget-asset').forEach(el=>el.classList.remove('budget-disabled'));
+    document.getElementById('budget-summary').style.display='none';
+  }
+}
+buildBudgetPicker();
+
+// ─── DELIVERABLE CHECK ───
+function checkDeliverable(){
+  const sections=[
+    {id:'del-1',min:60,name:'Risk Summary'},
+    {id:'del-2',min:100,name:'Priority List'},
+    {id:'del-3',min:60,name:'Timeline'},
+    {id:'del-4',min:40,name:'Legacy Recommendation'},
+    {id:'del-5',min:30,name:'Immediate Action'},
+  ];
+  const results=sections.map(s=>{
+    const txt=(document.getElementById(s.id).value||'').trim();
+    const wc=txt?txt.split(/\s+/).length:0;
+    return {name:s.name,wc,ok:wc>=s.min,min:s.min};
+  });
+  const allOk=results.every(r=>r.ok);
+  const el=document.getElementById('deliverable-check');
+  el.style.display='block';
+  el.className='callout '+(allOk?'success':'warn');
+  el.innerHTML=`<span class="callout-title">${allOk?'✅ Deliverable Complete':'⚠ Sections Need More Content'}</span>`+
+    results.map(r=>`<div style="margin:4px 0;font-family:var(--mono);font-size:12px;">
+      <span style="color:${r.ok?'var(--green)':'var(--orange)'};">${r.ok?'✓':'○'} ${r.name}:</span>
+      <span style="color:var(--text-muted);"> ${r.wc} words ${r.ok?'':'(minimum ~'+r.min+')'}</span>
+    </div>`).join('')+
+    (allOk?'<div style="margin-top:10px;">All sections meet minimum length. Your deliverable is ready for submission.</div>':'<div style="margin-top:10px;">Expand the flagged sections. Board plans should be thorough enough to stand alone without verbal explanation.</div>');
+}
+function clearDeliverable(){
+  ['del-1','del-2','del-3','del-4','del-5'].forEach(id=>{
+    document.getElementById(id).value='';
+    const w=document.getElementById(id+'-wc'); if(w)w.textContent='0 words';
+  });
+  document.getElementById('deliverable-check').style.display='none';
+}
+
+// ─── REFLECTION ───
+const refData={
+  rq1:{correct:2,texts:[
+    'Incorrect. NIST does not have enforcement authority equivalent to a regulatory mandate. Historical SHA-1 and MD5 deprecation deadlines passed with widespread non-compliance at organizations far larger and better-resourced than typical healthcare networks. The 2035 deadline is a goal, not a guarantee.',
+    'Partially correct but optimistic. New deployments will likely meet the 2035 deadline more easily than legacy systems. But for critical infrastructure with embedded hardware and regulatory constraints, even new deployments are complex. "Legacy systems lag by 3–5 years" significantly understates the likely gap for healthcare.',
+    'Correct. The historical record is clear: major cryptographic transitions consistently take 10–20 years from announcement to broad adoption. SHA-1 is the relevant benchmark. The PQC migration is more complex than SHA-1 deprecation because it requires hardware replacement in many cases, involves more diverse algorithm types (key exchange, signatures, symmetric), and affects more varied infrastructure. Planning for partial non-compliance at the 2035 deadline is more prudent than assuming compliance.',
+    'Incorrect. While CRQC timelines are uncertain, extending the deadline based on timeline uncertainty is the opposite of sound risk management. The harvest-now-decrypt-later threat is active today regardless of when CRQCs arrive.'
+  ]},
+  rq2:{correct:2,texts:[
+    'Incorrect. Operating within currently accepted standards is not an ethical defense when the specific risk is known, foreseeable, and actively being exploited (via data harvesting). The ethical standard is not "no regulations require this yet" but "do we have a duty to protect the people whose data we hold." HIPAA\'s Security Rule requires a risk management program — and known cryptographic vulnerabilities are material risks that must be documented and mitigated.',
+    'Not the right approach. Mass patient disclosure of a cryptographic vulnerability without a remediation plan would create confusion, erode trust, and is not required by HIPAA for potential future vulnerabilities. The obligation is to mitigate the risk, not to transfer its anxiety to patients who have no ability to address it.',
+    'Correct. The ethical framework here is not "is there a regulation requiring this" but "what does the duty of care to patients require." Healthcare organizations are stewards of sensitive health information. Known, foreseeable risks — including harvest-now-decrypt-later — must be documented, disclosed to appropriate stakeholders, and actively mitigated. Operating a vulnerable system without compensating controls while possessing knowledge of the vulnerability is a foreseeable breach of the duty of care, regardless of whether a CRQC exists today.',
+    'Incorrect. Shutting down MRI systems would likely cause greater patient harm than the cryptographic risk — these are active diagnostic tools. The ethical obligation is proportionate risk management, not zero-tolerance responses that cause operational harm. A proportionate response is: document, isolate, deploy compensating controls, and accelerate replacement.'
+  ]},
+  rq3:{correct:3,texts:[
+    'Incorrect. PQC algorithms are not drop-in replacements. Signature sizes increased by 46×. Public keys are 18–30× larger. Hardware HSMs must be replaced. Legacy embedded systems may have no update path. The migration requires hardware procurement, regulatory approval, vendor coordination, and organizational change — not just software updates.',
+    'Incorrect. Performance is not the primary challenge. ML-KEM key generation is 230× faster than RSA-2048. ML-DSA signing is slower but within acceptable bounds for most applications. The signature size increase is a real concern for constrained IoT, but manageable with ML-KEM-512 and PSK resumption. Performance is a solvable engineering problem.',
+    'Incorrect. The statement "all current cryptography" is wrong — symmetric algorithms like AES are weakened but not broken by quantum computers (Grover\'s algorithm reduces AES-256 to AES-128 equivalence). The claim that 2030 is definitive is also unsupported — CRQC arrival is genuinely uncertain. Overstatement of urgency can lead to poor decisions (rushing migrations, accepting inadequate solutions).',
+    'Correct. Labs 1–4 developed the technical skills. Lab 5 demonstrated that the hardest part is organizational: identifying all systems, prioritizing under constraints, managing unmigrateable hardware, writing for non-technical audiences, and sustaining a multi-year program. The gap between "I know how ML-KEM works" and "I can lead a successful PQC migration at a 12-hospital health system" is primarily organizational, communicational, and managerial — not cryptographic.'
+  ]}
+};
+function doRef(qid,idx,correct){
+  if(St.reflectDone.has(qid))return;
+  St.reflectDone.add(qid);
+  const data=refData[qid];
+  document.getElementById(qid+'-opts').querySelectorAll('.ref-opt').forEach((o,i)=>{
+    if(i===data.correct)o.classList.add('correct');
+    else if(i===idx&&!correct)o.classList.add('incorrect');
+    o.style.pointerEvents='none';
+  });
+  const rev=document.getElementById(qid+'-reveal');
+  rev.className='answer-reveal show '+(correct?'correct-reveal':'incorrect-reveal');
+  rev.innerHTML=`<span class="reveal-label">${correct?'✓ Correct':'✗ Incorrect'}</span>${data.texts[idx]}`;
+}
+
+// ─── WORD COUNTER ───
+function wc(srcId,tgtId){
+  const txt=(document.getElementById(srcId).value||'').trim();
+  const n=txt?txt.split(/\s+/).length:0;
+  if(tgtId){const el=document.getElementById(tgtId);if(el)el.textContent=n+' words';}
+}
+
+// ─── FINISH ───
+function finishLab(){
+  if(St.reflectDone.size<3){alert('Please answer all three reflection questions.\nAnswered: '+St.reflectDone.size+'/3');return;}
+  document.getElementById('completionBanner').classList.add('show');
+  document.getElementById('completionBanner').scrollIntoView({behavior:'smooth'});
+  document.getElementById('tab7').classList.add('done');
+}
+</script>
+</body>
+</html>
